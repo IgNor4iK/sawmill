@@ -3,94 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sawmill Test Auth</title>
-    <script src="https://telegram.org"></script>
+    <title>Тест Дизайна</title>
     <style>
-        :root { --bg: #121212; --card: #1e1e1e; --accent: #007AFF; --text: #e0e0e0; --danger: #FF3B30; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        
-        /* Экраны */
-        #auth-screen { display: none; padding: 50px 20px; text-align: center; }
-        #app-content { display: none; width: 100%; max-width: 450px; flex-direction: column; }
-
-        /* Дизайн вкладок */
-        .tabs { display: flex; background: #1e1e1e; border-bottom: 1px solid #333; }
-        .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: #666; font-weight: bold; cursor: pointer; }
-        .tab-btn.active { color: white; border-bottom: 3px solid var(--accent); }
-
-        .container { padding: 20px; }
-        .card { background: var(--card); padding: 20px; border-radius: 12px; text-align: center; }
-        #hash-val { font-family: monospace; font-size: 11px; color: var(--danger); word-break: break-all; background: #000; padding: 10px; margin-top: 20px; border-radius: 5px; display: block; }
+        body { 
+            background: #121212; 
+            color: white; 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .card { 
+            background: #1e1e1e; 
+            padding: 30px; 
+            border-radius: 15px; 
+            border: 2px solid #007AFF; 
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h1 { color: #007AFF; margin: 0 0 10px 0; }
+        p { color: #888; margin: 0; }
     </style>
 </head>
 <body>
 
-    <!-- ЭКРАН ПРОВЕРКИ -->
-    <div id="auth-screen">
-        <h2 id="status-title">ПРОВЕРКА...</h2>
-        <div id="hash-info">
-            Ожидание данных от Telegram...
-            <span id="hash-val"></span>
-        </div>
+    <div class="card">
+        <h1>СВЯЗЬ ЕСТЬ!</h1>
+        <p>Если ты видишь эту надпись,</p>
+        <p>значит GitHub работает правильно.</p>
     </div>
 
-    <!-- ЭКРАН ПРОГРАММЫ (ПУСТОЙ ДИЗАЙН) -->
-    <div id="app-content">
-        <div class="tabs">
-            <button class="tab-btn active">КАЛЬКУЛЯТОР</button>
-            <button class="tab-btn">ЖУРНАЛ</button>
-        </div>
-        <div class="container">
-            <div class="card">
-                <h3>ДОСТУП РАЗРЕШЕН</h3>
-                <p style="color: #888;">Если вы видите это сообщение, значит авторизация прошла успешно.</p>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        
-        // --- ВСТАВЬ СВОЙ ХЭШ ТУТ ---
-        const ALLOWED_HASH = "ТВОЙ_ХЭШ"; 
-
-        async function hashID(id) {
-            const msgBuffer = new TextEncoder().encode(id.toString());
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        async function init() {
-            const authScreen = document.getElementById('auth-screen');
-            const appContent = document.getElementById('app-content');
-            const statusTitle = document.getElementById('status-title');
-            const hashVal = document.getElementById('hash-val');
-
-            const userId = tg?.initDataUnsafe?.user?.id;
-
-            if (!userId) {
-                authScreen.style.display = 'block';
-                statusTitle.innerText = "ОШИБКА";
-                hashVal.innerText = "Запустите через Telegram бота";
-                return;
-            }
-
-            const userHash = await hashID(userId);
-
-            if (userHash === ALLOWED_HASH) {
-                authScreen.style.display = 'none';
-                appContent.style.display = 'flex';
-                tg.expand();
-                tg.ready();
-            } else {
-                authScreen.style.display = 'block';
-                statusTitle.innerText = "ДОСТУП ЗАПРЕЩЕН";
-                hashVal.innerText = userHash; // Показываем хэш, чтобы его можно было скопировать
-            }
-        }
-
-        // Запуск
-        window.onload = init;
-    </script>
 </body>
 </html>
