@@ -3,101 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sawmill Master v2.6</title>
+    <title>Sawmill Master Secure</title>
+    <script src="https://telegram.org"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --accent: #007AFF; --accent-log: #4CD964; --text: #e0e0e0; --input-bg: #2c2c2c; --danger: #FF3B30; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 0; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 0; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
+        /* Стили авторизации */
+        #auth-screen { display: none; padding: 50px 20px; text-align: center; }
+        #user-hash-display { font-family: monospace; font-size: 10px; color: #444; word-break: break-all; margin-top: 20px; border: 1px dashed #333; padding: 10px; }
+        
+        #app-content { display: none; width: 100%; flex-direction: column; align-items: center; }
         .tabs { display: flex; width: 100%; max-width: 450px; background: #1e1e1e; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
         .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: #666; font-weight: bold; cursor: pointer; font-size: 14px; }
         .tab-btn.active { color: white; border-bottom: 3px solid var(--accent); }
         .tab-btn.active.log-active { border-bottom-color: var(--accent-log); }
-
         .container { width: 100%; max-width: 450px; padding: 15px; box-sizing: border-box; }
         .page { display: none; }
         .page.active { display: block; }
-
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         label { display: block; margin-bottom: 5px; font-size: 12px; color: #888; }
         input { width: 100%; padding: 12px; margin-bottom: 10px; background: var(--input-bg); border: 1px solid #333; border-radius: 8px; color: white; font-size: 18px; box-sizing: border-box; outline: none; }
-        input:focus { border-color: var(--accent); }
-        
         .row-group { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 10px; }
         .del-btn { background: none; border: none; color: var(--danger); font-size: 24px; cursor: pointer; }
         .result-item { background: #252525; padding: 12px; margin-top: 8px; border-radius: 6px; font-size: 22px; display: flex; justify-content: space-between; font-weight: bold; border-left: 8px solid var(--accent); cursor: pointer; }
-
-        .add-btn-log { width: 100%; padding: 18px; background: var(--accent-log); color: #000; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; margin-top: 5px; cursor: pointer; }
-        .stats-line { text-align: center; font-size: 16px; font-weight: bold; color: var(--accent-log); margin-bottom: 15px; letter-spacing: 0.5px; }
-        
+        .add-btn-log { width: 100%; padding: 18px; background: var(--accent-log); color: #000; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; margin-top: 5px; }
+        .stats-line { text-align: center; font-size: 16px; font-weight: bold; color: var(--accent-log); margin-bottom: 15px; }
         .log-item { background: #252525; padding: 12px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 6px solid var(--accent-log); }
         .log-desc { font-size: 18px; font-weight: bold; }
         .del-log { color: var(--danger); font-size: 28px; padding-left: 15px; cursor: pointer; }
-        
         .clear-link { color: #444; font-size: 12px; cursor: pointer; text-decoration: underline; display: block; margin-top: 10px; text-align: right; }
     </style>
 </head>
 <body>
 
-<div class="tabs">
-    <button id="t-calc" class="tab-btn active" onclick="showPage('calc', this)">КАЛЬКУЛЯТОР</button>
-    <button id="t-journal" class="tab-btn" onclick="showPage('journal', this)">ЖУРНАЛ СМЕНЫ</button>
+<div id="auth-screen">
+    <h2 style="color:var(--danger)">ДОСТУП ЗАПРЕЩЕН</h2>
+    <p>Ваш аккаунт не авторизован.</p>
+    <div id="user-hash-display">Загрузка вашего ключа...</div>
 </div>
 
-<div class="container">
-    <div id="calc" class="page active">
-        <div class="card">
-            <label>Высота бревна (мм)</label>
-            <input type="number" id="h" value="250" oninput="saveAndCalc()">
-            <label>Толщина пилы (мм)</label>
-            <input type="number" id="kerf" value="3" oninput="saveAndCalc()">
-            <label>Основание (мм)</label>
-            <input type="number" id="base" value="50" oninput="saveAndCalc()">
-            <span onclick="clearCalc()" class="clear-link">Сбросить калькулятор</span>
-        </div>
-        <div class="card">
-            <div id="rows-container"></div>
-            <button style="background:#333; color:white; border:none; padding:12px; border-radius:8px; width:100%; font-weight:bold;" onclick="addRow(25, 10)">+ ДОБАВИТЬ РАЗМЕР</button>
-        </div>
-        <div id="results"></div>
+<div id="app-content">
+    <div class="tabs">
+        <button id="t-calc" class="tab-btn active" onclick="showPage('calc', this)">КАЛЬКУЛЯТОР</button>
+        <button id="t-journal" class="tab-btn" onclick="showPage('journal', this)">ЖУРНАЛ СМЕНЫ</button>
     </div>
 
-    <div id="journal" class="page">
-        <div class="card">
-            <div class="stats-line" id="stats-summary">За смену: 0 шт. | 0.000 м³ (ГОСТ)</div>
-            <div style="display: flex; gap: 10px;">
-                <div style="flex:2">
-                    <label>Диаметр (мм)</label>
-                    <input type="number" id="log-size" placeholder="240" inputmode="numeric">
-                </div>
-                <div style="flex:1">
-                    <label>Длина (м)</label>
-                    <input type="number" id="log-len" value="6.0" step="0.1" inputmode="decimal">
-                </div>
+    <div class="container">
+        <!-- Калькулятор -->
+        <div id="calc" class="page active">
+            <div class="card">
+                <label>Высота бревна (мм)</label>
+                <input type="number" id="h" value="250" oninput="saveAndCalc()">
+                <label>Толщина пилы (мм)</label>
+                <input type="number" id="kerf" value="3" oninput="saveAndCalc()">
+                <label>Основание (мм)</label>
+                <input type="number" id="base" value="50" oninput="saveAndCalc()">
+                <span onclick="clearCalc()" class="clear-link">Сбросить настройки</span>
             </div>
-            <label>Заметка (сорт/порода)</label>
-            <input type="text" id="log-note" placeholder="—">
-            <button class="add-btn-log" onclick="addToJournal()">ЗАПИСАТЬ БРЕВНО</button>
+            <div class="card">
+                <div id="rows-container"></div>
+                <button style="background:#333; color:white; border:none; padding:12px; border-radius:8px; width:100%; font-weight:bold;" onclick="addRow(25, 10)">+ ДОБАВИТЬ РАЗМЕР</button>
+            </div>
+            <div id="results"></div>
         </div>
-        <div id="journal-list"></div>
-        <span onclick="clearJournal()" class="clear-link">Очистить историю смены</span>
+
+        <!-- Журнал -->
+        <div id="journal" class="page">
+            <div class="card">
+                <div class="stats-line" id="stats-summary">За смену: 0 шт. | 0.000 м³</div>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex:2"><label>Диаметр (мм)</label><input type="number" id="log-size" placeholder="240" inputmode="numeric"></div>
+                    <div style="flex:1"><label>Длина (м)</label><input type="number" id="log-len" value="6.0" step="0.1" inputmode="decimal"></div>
+                </div>
+                <label>Заметка</label>
+                <input type="text" id="log-note" placeholder="—">
+                <button class="add-btn-log" onclick="addToJournal()">ЗАПИСАТЬ БРЕВНО</button>
+            </div>
+            <div id="journal-list"></div>
+            <span onclick="clearJournal()" class="clear-link">Очистить смену</span>
+        </div>
     </div>
 </div>
 
 <script>
+    const tg = window.Telegram.WebApp;
+    
+    // --- ШАГ: ВСТАВЬ СВОЙ ХЭШ МЕЖДУ КАВЫЧЕК ---
+    const ALLOWED_HASH = "ЗДЕСЬ_БУДЕТ_ТВОЙ_ХЭШ"; 
+
+    async function hashID(id) {
+        const msgBuffer = new TextEncoder().encode(id.toString());
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function checkAuth() {
+        const userId = tg.initDataUnsafe?.user?.id;
+        if (!userId) {
+            document.getElementById('auth-screen').style.display = 'block';
+            document.getElementById('user-hash-display').innerText = "Запустите через Telegram бота";
+            return;
+        }
+
+        const userHash = await hashID(userId);
+
+        if (userHash === ALLOWED_HASH) {
+            document.getElementById('app-content').style.display = 'flex';
+            tg.expand();
+            tg.ready();
+        } else {
+            document.getElementById('auth-screen').style.display = 'block';
+            document.getElementById('user-hash-display').innerHTML = "Ваш ключ для вставки в код:<br><b>" + userHash + "</b>";
+        }
+    }
+
+    // --- ЛОГИКА ПРИЛОЖЕНИЯ ---
     const CALC_KEY = 'sawmill_settings_v3';
     const LOG_KEY = 'sawmill_journal_v3';
+    const GOST_REF = { 14: [0.06, 0.09, 0.12, 0.15], 16: [0.07, 0.11, 0.16, 0.19], 18: [0.10, 0.14, 0.19, 0.24], 20: [0.12, 0.17, 0.23, 0.30], 22: [0.15, 0.21, 0.28, 0.36], 24: [0.18, 0.25, 0.33, 0.43], 26: [0.21, 0.29, 0.39, 0.50], 28: [0.25, 0.34, 0.45, 0.58], 30: [0.28, 0.39, 0.52, 0.67], 32: [0.33, 0.45, 0.59, 0.76], 34: [0.37, 0.51, 0.66, 0.85], 36: [0.41, 0.57, 0.74, 0.95], 38: [0.46, 0.63, 0.83, 1.06], 40: [0.51, 0.70, 0.92, 1.17] };
 
-    const GOST_REF = {
-        14: [0.06, 0.09, 0.12, 0.15], 16: [0.07, 0.11, 0.16, 0.19],
-        18: [0.10, 0.14, 0.19, 0.24], 20: [0.12, 0.17, 0.23, 0.30],
-        22: [0.15, 0.21, 0.28, 0.36], 24: [0.18, 0.25, 0.33, 0.43],
-        26: [0.21, 0.29, 0.39, 0.50], 28: [0.25, 0.34, 0.45, 0.58],
-        30: [0.28, 0.39, 0.52, 0.67], 32: [0.33, 0.45, 0.59, 0.76],
-        34: [0.37, 0.51, 0.66, 0.85], 36: [0.41, 0.57, 0.74, 0.95],
-        38: [0.46, 0.63, 0.83, 1.06], 40: [0.51, 0.70, 0.92, 1.17]
-    };
-
-    window.onload = () => { loadCalcData(); loadJournal(); calculate(); };
+    window.onload = () => { checkAuth(); loadCalcData(); loadJournal(); calculate(); };
 
     function showPage(pageId, btn) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -110,124 +137,60 @@
     function calculateGost(diamMm, lenM) {
         let d = Math.round(diamMm / 10);
         if (d < 14) return (Math.PI * Math.pow(diamMm/2000, 2) * lenM).toFixed(3);
-        
-        let ds = Object.keys(GOST_REF).map(Number).sort((a,b) => a-b);
-        let d_lower = ds.filter(x => x <= d).pop() || ds[0];
-        let d_upper = ds.filter(x => x >= d).shift() || ds[ds.length-1];
-
-        const getVol = (diam, length) => {
-            let vols = GOST_REF[diam];
-            if (length <= 3.5) return vols[0];
-            if (length <= 4.5) return vols[1];
-            if (length <= 5.5) return vols[2];
-            return vols[3];
-        };
-
-        if (d_lower === d_upper) return getVol(d, lenM).toFixed(3);
-        
-        let v1 = getVol(d_lower, lenM);
-        let v2 = getVol(d_upper, lenM);
-        return (v1 + (v2 - v1) * (d - d_lower) / (d_upper - d_lower)).toFixed(3);
+        let ds = Object.keys(GOST_REF).map(Number).sort((a,b)=>a-b);
+        let dL = ds.filter(x => x <= d).pop() || ds[0];
+        let dU = ds.filter(x => x >= d).shift() || ds[ds.length-1];
+        const getV = (dm, ln) => { let vs = GOST_REF[dm]; return ln <= 3.5 ? vs[0] : ln <= 4.5 ? vs[1] : ln <= 5.5 ? vs[2] : vs[3]; };
+        if (dL === dU) return getV(d, lenM).toFixed(3);
+        let v1 = getV(dL, lenM), v2 = getV(dU, lenM);
+        return (v1 + (v2 - v1) * (d - dL) / (dU - dL)).toFixed(3);
     }
 
     function addToJournal() {
-        const s = document.getElementById('log-size');
-        const l = document.getElementById('log-len');
-        const n = document.getElementById('log-note');
+        const s = document.getElementById('log-size'), l = document.getElementById('log-len'), n = document.getElementById('log-note');
         if (!s.value) return;
-
         const vol = calculateGost(parseFloat(s.value), parseFloat(l.value));
-        const entry = {
-            id: Date.now(),
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            size: s.value, len: l.value, vol: vol, note: n.value || "—"
-        };
-
         let logs = JSON.parse(localStorage.getItem(LOG_KEY) || "[]");
-        logs.unshift(entry);
+        logs.unshift({ id: Date.now(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), size: s.value, len: l.value, vol: vol, note: n.value || "—" });
         localStorage.setItem(LOG_KEY, JSON.stringify(logs));
-        s.value = ''; n.value = '';
-        s.focus(); // Возвращаем фокус для быстрого ввода
-        loadJournal();
+        s.value = ''; n.value = ''; s.focus(); loadJournal();
     }
 
     function loadJournal() {
         const logs = JSON.parse(localStorage.getItem(LOG_KEY) || "[]");
-        const totalVol = logs.reduce((sum, item) => sum + parseFloat(item.vol), 0).toFixed(3);
-        document.getElementById('stats-summary').innerText = `За смену: ${logs.length} шт. | ${totalVol} м³ (ГОСТ)`;
-        document.getElementById('journal-list').innerHTML = logs.map(item => `
-            <div class="log-item">
-                <div>
-                    <div style="font-size:11px; color:#666;">${item.time} • ${item.len}м</div>
-                    <div class="log-desc">${item.size} мм <span style="color:var(--accent-log); font-size:15px; margin-left:10px;">${item.vol} м³</span></div>
-                    <div style="font-size:12px; color:#555;">${item.note}</div>
-                </div>
-                <div class="del-log" onclick="deleteLog(${item.id})">×</div>
-            </div>`).join('');
+        const tV = logs.reduce((sum, item) => sum + parseFloat(item.vol), 0).toFixed(3);
+        document.getElementById('stats-summary').innerText = `За смену: ${logs.length} шт. | ${tV} м³`;
+        document.getElementById('journal-list').innerHTML = logs.map(i => `<div class="log-item"><div><div style="font-size:11px; color:#666;">${i.time} • ${i.len}м</div><div class="log-desc">${i.size} мм <span style="color:var(--accent-log); font-size:15px; margin-left:10px;">${i.vol} м³</span></div><div style="font-size:12px; color:#555;">${i.note}</div></div><div class="del-log" onclick="deleteLog(${i.id})">×</div></div>`).join('');
     }
 
-    function saveAndCalc() {
-        const data = {
-            h: document.getElementById('h').value, kerf: document.getElementById('kerf').value, base: document.getElementById('base').value,
-            rows: Array.from(document.querySelectorAll('.row-group')).map(g => ({ t: g.querySelector('.t-val').value, c: g.querySelector('.c-val').value }))
-        };
-        localStorage.setItem(CALC_KEY, JSON.stringify(data));
-        calculate();
-    }
-
+    function saveAndCalc() { localStorage.setItem(CALC_KEY, JSON.stringify({ h: document.getElementById('h').value, kerf: document.getElementById('kerf').value, base: document.getElementById('base').value, rows: Array.from(document.querySelectorAll('.row-group')).map(g => ({ t: g.querySelector('.t-val').value, c: g.querySelector('.c-val').value })) })); calculate(); }
+    
     function calculate() {
-        const h_max = parseFloat(document.getElementById('h').value) || 0;
-        const kerf = parseFloat(document.getElementById('kerf').value) || 0;
-        const base = parseFloat(document.getElementById('base').value) || 0;
-        let current_h = base;
-        let marks = [];
-        
-        document.querySelectorAll('.row-group').forEach((row, i) => {
-            let t = parseFloat(row.querySelector('.t-val').value) || 0;
-            let c = parseInt(row.querySelector('.c-val').value) || 0;
-            for (let j = 0; j < c; j++) {
-                if (current_h + t + kerf <= h_max) {
-                    current_h += (t + kerf);
-                    marks.push({ val: current_h.toFixed(1), size: t });
-                }
-            }
+        const h_max = parseFloat(document.getElementById('h').value), k = parseFloat(document.getElementById('kerf').value), b = parseFloat(document.getElementById('base').value);
+        let cur = b, marks = [];
+        document.querySelectorAll('.row-group').forEach(row => {
+            let t = parseFloat(row.querySelector('.t-val').value), c = parseInt(row.querySelector('.c-val').value);
+            for (let j = 0; j < c; j++) { if (cur + t + k <= h_max) { cur += (t + k); marks.push({ val: cur.toFixed(1), size: t }); } }
         });
-
-        document.getElementById('results').innerHTML = marks.slice().reverse().map((m, idx) => `
-            <div class="result-item" onclick="sendToLog(${m.val})">
-                <span style="font-size:13px; color:#888;">№${marks.length - idx} (${m.size}мм)</span>
-                <span>${m.val} мм</span>
-            </div>`).join('');
+        document.getElementById('results').innerHTML = marks.slice().reverse().map((m, idx) => `<div class="result-item" onclick="sendToLog(${m.val})"><span style="font-size:13px; color:#888;">№${marks.length - idx} (${m.size}мм)</span><span>${m.val} мм</span></div>`).join('');
     }
 
-    function sendToLog(val) {
-        document.getElementById('log-size').value = Math.round(val);
-        showPage('journal', document.getElementById('t-journal'));
-    }
-
-    function addRow(t = 25, c = 1, save = true) {
-        const div = document.createElement('div');
-        div.className = 'row-group';
-        div.innerHTML = `
-            <div style="flex:1"><label>Толщина</label><input type="number" class="t-val" value="${t}" oninput="saveAndCalc()"></div>
-            <div style="flex:1"><label>Кол-во</label><input type="number" class="c-val" value="${c}" oninput="saveAndCalc()"></div>
-            <button class="del-btn" onclick="this.parentElement.remove(); saveAndCalc()">×</button>
-        `;
+    function sendToLog(v) { document.getElementById('log-size').value = Math.round(v); showPage('journal', document.getElementById('t-journal')); }
+    function addRow(t = 25, c = 1, s = true) {
+        const div = document.createElement('div'); div.className = 'row-group';
+        div.innerHTML = `<div style="flex:1"><label>Толщина</label><input type="number" class="t-val" value="${t}" oninput="saveAndCalc()"></div><div style="flex:1"><label>Кол-во</label><input type="number" class="c-val" value="${c}" oninput="saveAndCalc()"></div><button class="del-btn" onclick="this.parentElement.remove(); saveAndCalc()">×</button>`;
         document.getElementById('rows-container').appendChild(div);
-        if (save) saveAndCalc();
+        if (s) saveAndCalc();
     }
 
     function loadCalcData() {
-        const saved = JSON.parse(localStorage.getItem(CALC_KEY));
-        if (!saved) { addRow(25, 10, false); return; }
-        document.getElementById('h').value = saved.h;
-        document.getElementById('kerf').value = saved.kerf;
-        document.getElementById('base').value = saved.base;
+        const sv = JSON.parse(localStorage.getItem(CALC_KEY));
+        if (!sv) { addRow(25, 10, false); return; }
+        document.getElementById('h').value = sv.h; document.getElementById('kerf').value = sv.kerf; document.getElementById('base').value = sv.base;
         document.getElementById('rows-container').innerHTML = '';
-        saved.rows.forEach(r => addRow(r.t, r.c, false));
+        sv.rows.forEach(r => addRow(r.t, r.c, false));
     }
-
-    function deleteLog(id) { if (confirm("Удалить?")) { let logs = JSON.parse(localStorage.getItem(LOG_KEY) || "[]").filter(l => l.id !== id); localStorage.setItem(LOG_KEY, JSON.stringify(logs)); loadJournal(); } }
+    function deleteLog(id) { if (confirm("Удалить?")) { let l = JSON.parse(localStorage.getItem(LOG_KEY) || "[]").filter(x => x.id !== id); localStorage.setItem(LOG_KEY, JSON.stringify(l)); loadJournal(); } }
     function clearJournal() { if (confirm("Очистить смену?")) { localStorage.removeItem(LOG_KEY); loadJournal(); } }
     function clearCalc() { if (confirm("Сбросить?")) { localStorage.removeItem(CALC_KEY); location.reload(); } }
 </script>
