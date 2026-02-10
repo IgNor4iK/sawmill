@@ -3,192 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sawmill Master Pro</title>
-    <!-- ТЕЛЕГРАМ СКРИПТ -->
+    <title>Sawmill Test Auth</title>
     <script src="https://telegram.org"></script>
     <style>
-        :root { --bg: #121212; --card: #1e1e1e; --accent: #007AFF; --accent-log: #4CD964; --text: #e0e0e0; --input-bg: #2c2c2c; --danger: #FF3B30; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 0; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        :root { --bg: #121212; --card: #1e1e1e; --accent: #007AFF; --text: #e0e0e0; --danger: #FF3B30; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        /* ЭКРАН ОШИБКИ / ВХОДА */
-        #auth-screen { display: none; padding: 60px 20px; text-align: center; width: 100%; box-sizing: border-box; }
-        #user-hash-display { font-family: monospace; font-size: 11px; color: #666; word-break: break-all; margin-top: 30px; border: 1px dashed #333; padding: 15px; background: #1a1a1a; border-radius: 8px; }
+        /* Экраны */
+        #auth-screen { display: none; padding: 50px 20px; text-align: center; }
+        #app-content { display: none; width: 100%; max-width: 450px; flex-direction: column; }
 
-        /* КОНТЕНТ */
-        #app-content { display: none; width: 100%; flex-direction: column; align-items: center; }
-        .tabs { display: flex; width: 100%; max-width: 450px; background: #1e1e1e; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
-        .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: #666; font-weight: bold; cursor: pointer; font-size: 14px; outline: none; }
+        /* Дизайн вкладок */
+        .tabs { display: flex; background: #1e1e1e; border-bottom: 1px solid #333; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: #666; font-weight: bold; cursor: pointer; }
         .tab-btn.active { color: white; border-bottom: 3px solid var(--accent); }
-        .tab-btn.active.log-active { border-bottom-color: var(--accent-log); }
 
-        .container { width: 100%; max-width: 450px; padding: 15px; box-sizing: border-box; }
-        .page { display: none; }
-        .page.active { display: block; }
-        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        label { display: block; margin-bottom: 5px; font-size: 12px; color: #888; }
-        input { width: 100%; padding: 12px; margin-bottom: 10px; background: var(--input-bg); border: 1px solid #333; border-radius: 8px; color: white; font-size: 18px; box-sizing: border-box; outline: none; border: 1px solid transparent; }
-        input:focus { border-color: #444; }
-
-        .row-group { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .del-btn { background: none; border: none; color: var(--danger); font-size: 24px; cursor: pointer; padding-bottom: 10px; }
-        .result-item { background: #252525; padding: 12px; margin-top: 8px; border-radius: 8px; font-size: 22px; display: flex; justify-content: space-between; font-weight: bold; border-left: 8px solid var(--accent); cursor: pointer; }
-
-        .add-btn-log { width: 100%; padding: 18px; background: var(--accent-log); color: #000; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; margin-top: 5px; cursor: pointer; }
-        .stats-line { text-align: center; font-size: 16px; font-weight: bold; color: var(--accent-log); margin-bottom: 15px; }
-        .log-item { background: #252525; padding: 12px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 6px solid var(--accent-log); }
-        .log-desc { font-size: 18px; font-weight: bold; }
-        .del-log { color: var(--danger); font-size: 28px; padding-left: 15px; cursor: pointer; }
-        .clear-link { color: #444; font-size: 12px; cursor: pointer; text-decoration: underline; display: block; margin-top: 10px; text-align: right; }
+        .container { padding: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; text-align: center; }
+        #hash-val { font-family: monospace; font-size: 11px; color: var(--danger); word-break: break-all; background: #000; padding: 10px; margin-top: 20px; border-radius: 5px; display: block; }
     </style>
 </head>
 <body>
 
-<div id="auth-screen">
-    <h2 id="auth-title" style="color:var(--danger)">ДОСТУП ЗАПРЕЩЕН</h2>
-    <div id="user-hash-display">Инициализация...</div>
-</div>
-
-<div id="app-content">
-    <div class="tabs">
-        <button id="t-calc" class="tab-btn active" onclick="showPage('calc', this)">КАЛЬКУЛЯТОР</button>
-        <button id="t-journal" class="tab-btn" onclick="showPage('journal', this)">ЖУРНАЛ СМЕНЫ</button>
-    </div>
-
-    <div class="container">
-        <!-- КАЛЬКУЛЯТОР -->
-        <div id="calc" class="page active">
-            <div class="card">
-                <label>Высота заготовки (мм)</label>
-                <input type="number" id="h" value="250" oninput="saveAndCalc()">
-                <label>Толщина пилы (мм)</label>
-                <input type="number" id="kerf" value="3" oninput="saveAndCalc()">
-                <label>Основание (мм)</label>
-                <input type="number" id="base" value="50" oninput="saveAndCalc()">
-                <span onclick="clearCalc()" class="clear-link">Сбросить настройки</span>
-            </div>
-            <div class="card">
-                <div id="rows-container"></div>
-                <button style="background:#333; color:white; border:none; padding:12px; border-radius:8px; width:100%; font-weight:bold; cursor:pointer;" onclick="addRow(25, 10)">+ ДОБАВИТЬ РАЗМЕР</button>
-            </div>
-            <div id="results"></div>
-        </div>
-
-        <!-- ЖУРНАЛ -->
-        <div id="journal" class="page">
-            <div class="card">
-                <div class="stats-line" id="stats-summary">За смену: 0 шт. | 0.000 м³</div>
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex:2"><label>Диаметр вершины (мм)</label><input type="number" id="log-size" placeholder="240" inputmode="numeric"></div>
-                    <div style="flex:1"><label>Длина (м)</label><input type="number" id="log-len" value="6.0" step="0.1" inputmode="decimal"></div>
-                </div>
-                <label>Заметка</label>
-                <input type="text" id="log-note" placeholder="Сосна">
-                <button class="add-btn-log" onclick="addToJournal()">ЗАПИСАТЬ БРЕВНО</button>
-            </div>
-            <div id="journal-list"></div>
-            <span onclick="clearJournal()" class="clear-link">Очистить историю смены</span>
+    <!-- ЭКРАН ПРОВЕРКИ -->
+    <div id="auth-screen">
+        <h2 id="status-title">ПРОВЕРКА...</h2>
+        <div id="hash-info">
+            Ожидание данных от Telegram...
+            <span id="hash-val"></span>
         </div>
     </div>
-</div>
 
-<script>
-    const tg = window.Telegram.WebApp;
-    
-    // --- ШАГ: ВСТАВЬ СВОЙ ХЭШ СЮДА ---
-    const ALLOWED_HASH = "da6f401f142835b899592d100f60457a9e129ef3f84bfc8407317ac99fb9f7e2"; 
+    <!-- ЭКРАН ПРОГРАММЫ (ПУСТОЙ ДИЗАЙН) -->
+    <div id="app-content">
+        <div class="tabs">
+            <button class="tab-btn active">КАЛЬКУЛЯТОР</button>
+            <button class="tab-btn">ЖУРНАЛ</button>
+        </div>
+        <div class="container">
+            <div class="card">
+                <h3>ДОСТУП РАЗРЕШЕН</h3>
+                <p style="color: #888;">Если вы видите это сообщение, значит авторизация прошла успешно.</p>
+            </div>
+        </div>
+    </div>
 
-    async function hashID(id) {
-        const msgBuffer = new TextEncoder().encode(id.toString());
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
+    <script>
+        const tg = window.Telegram.WebApp;
+        
+        // --- ВСТАВЬ СВОЙ ХЭШ ТУТ ---
+        const ALLOWED_HASH = "ТВОЙ_ХЭШ"; 
 
-    async function checkAuth() {
-        const userId = tg.initDataUnsafe?.user?.id;
-        if (!userId) {
-            document.getElementById('auth-screen').style.display = 'block';
-            document.getElementById('user-hash-display').innerText = "Ошибка: Откройте через Telegram бота";
-            return;
+        async function hashID(id) {
+            const msgBuffer = new TextEncoder().encode(id.toString());
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
-        const userHash = await hashID(userId);
-        if (userHash === ALLOWED_HASH) {
-            document.getElementById('app-content').style.display = 'flex';
-            tg.expand(); tg.ready();
-        } else {
-            document.getElementById('auth-screen').style.display = 'block';
-            document.getElementById('user-hash-display').innerHTML = "Ваш хэш для кода:<br><b>" + userHash + "</b>";
+
+        async function init() {
+            const authScreen = document.getElementById('auth-screen');
+            const appContent = document.getElementById('app-content');
+            const statusTitle = document.getElementById('status-title');
+            const hashVal = document.getElementById('hash-val');
+
+            const userId = tg?.initDataUnsafe?.user?.id;
+
+            if (!userId) {
+                authScreen.style.display = 'block';
+                statusTitle.innerText = "ОШИБКА";
+                hashVal.innerText = "Запустите через Telegram бота";
+                return;
+            }
+
+            const userHash = await hashID(userId);
+
+            if (userHash === ALLOWED_HASH) {
+                authScreen.style.display = 'none';
+                appContent.style.display = 'flex';
+                tg.expand();
+                tg.ready();
+            } else {
+                authScreen.style.display = 'block';
+                statusTitle.innerText = "ДОСТУП ЗАПРЕЩЕН";
+                hashVal.innerText = userHash; // Показываем хэш, чтобы его можно было скопировать
+            }
         }
-    }
 
-    const CALC_KEY = 'sw_set_v4'; const LOG_KEY = 'sw_log_v4';
-    const GOST_REF = { 14:[0.06,0.09,0.12,0.15], 16:[0.07,0.11,0.16,0.19], 18:[0.10,0.14,0.19,0.24], 20:[0.12,0.17,0.23,0.30], 22:[0.15,0.21,0.28,0.36], 24:[0.18,0.25,0.33,0.43], 26:[0.21,0.29,0.39,0.50], 28:[0.25,0.34,0.45,0.58], 30:[0.28,0.39,0.52,0.67], 32:[0.33,0.45,0.59,0.76], 34:[0.37,0.51,0.66,0.85], 36:[0.41,0.57,0.74,0.95], 38:[0.46,0.63,0.83,1.06], 40:[0.51,0.70,0.92,1.17] };
-
-    function calculateGost(diamMm, lenM) {
-        let d = Math.round(diamMm / 10);
-        if (d < 14) return (Math.PI * Math.pow(diamMm/2000, 2) * lenM).toFixed(3);
-        let ds = Object.keys(GOST_REF).map(Number).sort((a,b)=>a-b);
-        let dL = ds.filter(x => x <= d).pop() || ds[0];
-        let dU = ds.filter(x => x >= d).shift() || ds[ds.length-1];
-        const getV = (dm, ln) => { let vs = GOST_REF[dm]; return ln <= 3.5 ? vs[0] : ln <= 4.5 ? vs[1] : ln <= 5.5 ? vs[2] : vs[3]; };
-        if (dL === dU) return getV(d, lenM).toFixed(3);
-        let v1 = getV(dL, lenM), v2 = getV(dU, lenM);
-        return (v1 + (v2 - v1) * (d - dL) / (dU - dL)).toFixed(3);
-    }
-
-    function addToJournal() {
-        const s = document.getElementById('log-size'), l = document.getElementById('log-len'), n = document.getElementById('log-note');
-        if (!s.value) return;
-        const vol = calculateGost(parseFloat(s.value), parseFloat(l.value));
-        let logs = JSON.parse(localStorage.getItem(LOG_KEY) || "[]");
-        logs.unshift({ id: Date.now(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), size: s.value, len: l.value, vol: vol, note: n.value || "—" });
-        localStorage.setItem(LOG_KEY, JSON.stringify(logs));
-        s.value = ''; n.value = ''; s.focus(); loadJournal();
-    }
-
-    function loadJournal() {
-        const logs = JSON.parse(localStorage.getItem(LOG_KEY) || "[]");
-        const total = logs.reduce((acc, i) => acc + parseFloat(i.vol), 0).toFixed(3);
-        document.getElementById('stats-summary').innerText = `За смену: ${logs.length} шт. | ${total} м³ (ГОСТ)`;
-        document.getElementById('journal-list').innerHTML = logs.map(i => `<div class="log-item"><div><div style="font-size:11px; color:#666;">${i.time} • ${i.len}м</div><div class="log-desc">${i.size} мм <span style="color:var(--accent-log); font-size:15px; margin-left:10px;">${i.vol} м³</span></div><div style="font-size:12px; color:#555;">${i.note}</div></div><div class="del-log" onclick="deleteLog(${i.id})">×</div></div>`).join('');
-    }
-
-    function saveAndCalc() { localStorage.setItem(CALC_KEY, JSON.stringify({ h: document.getElementById('h').value, kerf: document.getElementById('kerf').value, base: document.getElementById('base').value, rows: Array.from(document.querySelectorAll('.row-group')).map(g => ({ t: g.querySelector('.t-val').value, c: g.querySelector('.c-val').value })) })); calculate(); }
-    function calculate() {
-        const h_max = parseFloat(document.getElementById('h').value), k = parseFloat(document.getElementById('kerf').value), b = parseFloat(document.getElementById('base').value);
-        let cur = b, marks = [];
-        document.querySelectorAll('.row-group').forEach(row => {
-            let t = parseFloat(row.querySelector('.t-val').value), c = parseInt(row.querySelector('.c-val').value);
-            for (let j = 0; j < c; j++) { if (cur + t + k <= h_max) { cur += (t + k); marks.push({ val: cur.toFixed(1), size: t }); } }
-        });
-        document.getElementById('results').innerHTML = marks.slice().reverse().map((m, idx) => `<div class="result-item" onclick="sendToLog(${m.val})"><span style="font-size:13px; color:#888;">№${marks.length - idx} (${m.size}мм)</span><span>${m.val} мм</span></div>`).join('');
-    }
-
-    function sendToLog(v) { document.getElementById('log-size').value = Math.round(v); showPage('journal', document.getElementById('t-journal')); }
-    function addRow(t = 25, c = 1, s = true) {
-        const div = document.createElement('div'); div.className = 'row-group';
-        div.innerHTML = `<div style="flex:1"><label>Толщина</label><input type="number" class="t-val" value="${t}" oninput="saveAndCalc()"></div><div style="flex:1"><label>Кол-во</label><input type="number" class="c-val" value="${c}" oninput="saveAndCalc()"></div><button class="del-btn" onclick="this.parentElement.remove(); saveAndCalc()">×</button>`;
-        document.getElementById('rows-container').appendChild(div);
-        if (s) saveAndCalc();
-    }
-
-    function loadCalcData() {
-        const sv = JSON.parse(localStorage.getItem(CALC_KEY));
-        if (!sv) { addRow(25, 10, false); return; }
-        document.getElementById('h').value = sv.h; document.getElementById('kerf').value = sv.kerf; document.getElementById('base').value = sv.base;
-        document.getElementById('rows-container').innerHTML = '';
-        sv.rows.forEach(r => addRow(r.t, r.c, false));
-    }
-    function showPage(pI, btn) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'log-active'));
-        document.getElementById(pI).classList.add('active'); btn.classList.add('active');
-        if(pI === 'journal') btn.classList.add('log-active');
-    }
-    function deleteLog(id) { if (confirm("Удалить?")) { let l = JSON.parse(localStorage.getItem(LOG_KEY) || "[]").filter(x => x.id !== id); localStorage.setItem(LOG_KEY, JSON.stringify(l)); loadJournal(); } }
-    function clearJournal() { if (confirm("Очистить смену?")) { localStorage.removeItem(LOG_KEY); loadJournal(); } }
-    function clearCalc() { if (confirm("Сбросить?")) { localStorage.removeItem(CALC_KEY); location.reload(); } }
-
-    window.addEventListener('DOMContentLoaded', () => { checkAuth(); loadCalcData(); loadJournal(); calculate(); });
-</script>
+        // Запуск
+        window.onload = init;
+    </script>
 </body>
 </html>
