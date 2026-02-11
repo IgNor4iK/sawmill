@@ -1,78 +1,64 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sawmill Debug</title>
-    <!-- Попробуем альтернативную ссылку на скрипт -->
-    <script src="https://telegram.org"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sawmill Offline Mode</title>
     <style>
         body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-        .card { border: 2px solid #444; padding: 20px; border-radius: 15px; background: #1a1a1a; margin-top: 50px; }
-        #debug { font-size: 11px; color: #666; margin-top: 20px; text-align: left; word-break: break-all; }
-        .red { color: #FF3B30; } .green { color: #4CD964; }
+        .card { border: 2px solid #007AFF; padding: 25px; border-radius: 15px; background: #1a1a1a; margin-top: 50px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #debug { font-size: 11px; color: #555; margin-top: 30px; text-align: left; background: #000; padding: 10px; border-radius: 5px; }
+        .green { color: #4CD964; } .red { color: #FF3B30; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2 id="status">ЗАГРУЗКА...</h2>
-        <p id="info">Проверка системы</p>
+        <h2 id="status">АВТОНОМНЫЙ ЗАПУСК</h2>
+        <p id="info">Проверка встроенного API...</p>
     </div>
 
-    <div id="debug">Логи отладки:<br></div>
+    <div id="debug">Логи системы:<br></div>
 
     <script>
+        // ВСТРОЕННАЯ МИНИ-БИБЛИОТЕКА TELEGRAM (чтобы не качать извне)
+        (function(){var a=window;a.Telegram={WebApp:{initDataUnsafe:{user:null},expand:function(){},ready:function(){},version:"6.0"}};var b=a.location.hash.slice(1);if(b){var c=new URLSearchParams(b);var d=c.get("tgWebAppData");if(d){var e=new URLSearchParams(d);var f=e.get("user");if(f){try{a.Telegram.WebApp.initDataUnsafe.user=JSON.parse(f)}catch(g){}}}}})();
+
         function log(m) { document.getElementById('debug').innerHTML += "> " + m + "<br>"; }
 
         // ВПИШИ СВОЙ ID СЮДА
         const MY_ID = 123456789; 
 
-        function start() {
-            log("Старт скрипта...");
+        function run() {
+            log("Запуск встроенного скрипта...");
+            const tg = window.Telegram.WebApp;
             
-            // 1. Проверяем наличие объекта в окне
-            const tg = window.Telegram ? window.Telegram.WebApp : null;
-            
-            if (!tg) {
-                log("Ошибка: window.Telegram не найден");
-                document.getElementById('status').innerText = "СКРИПТ НЕ ЗАГРУЖЕН";
-                document.getElementById('status').className = "red";
-                document.getElementById('info').innerText = "Проблема с доступом к серверам Telegram.";
-                return;
-            }
-
-            log("Telegram API найден. Версия: " + tg.version);
-            tg.ready();
-            log("tg.ready() вызван");
+            log("API инициализировано. Версия: " + tg.version);
 
             const user = tg.initDataUnsafe?.user;
 
             if (!user) {
-                log("initDataUnsafe.user пуст (запуск не через Mini App)");
-                document.getElementById('status').innerText = "НЕТ ДАННЫХ";
-                document.getElementById('info').innerText = "Запустите через КНОПКУ МЕНЮ в боте.";
+                log("Ошибка: Данные пользователя не найдены в ссылке.");
+                document.getElementById('status').innerText = "ОТКРОЙ В БОТЕ";
+                document.getElementById('status').className = "red";
+                document.getElementById('info').innerHTML = "Запусти через <b>Кнопку Меню</b> в боте.<br><small>Если открываешь через кнопку и видишь это — обнови Telegram.</small>";
                 return;
             }
 
-            log("Пользователь: " + user.id + " (" + user.first_name + ")");
+            log("Найден пользователь: " + user.id);
 
             if (user.id === MY_ID) {
-                document.getElementById('status').innerText = "ДОСТУП ЕСТЬ";
+                document.getElementById('status').innerText = "ДОСТУП РАЗРЕШЕН";
                 document.getElementById('status').className = "green";
-                document.getElementById('info').innerText = "Привет, " + user.first_name + "! Можно собирать калькулятор.";
-                tg.expand();
+                document.getElementById('info').innerText = "Привет, " + user.first_name + "! Теперь всё работает автономно.";
             } else {
                 document.getElementById('status').innerText = "ДОСТУП ЗАКРЫТ";
                 document.getElementById('status').className = "red";
-                document.getElementById('info').innerHTML = "Твой ID: <b>" + user.id + "</b><br>Впиши его в код.";
+                document.getElementById('info').innerHTML = "Ваш ID: <b>" + user.id + "</b><br>Впишите его в код на GitHub!";
             }
         }
 
-        // Ждем полной загрузки страницы и скриптов
-        window.addEventListener('load', () => {
-            setTimeout(start, 500);
-        });
+        window.onload = run;
     </script>
 </body>
 </html>
