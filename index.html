@@ -101,7 +101,7 @@
                 if (isAdmin || isUser) {
                     renderMenu(isAdmin, user.first_name);
                 } else {
-                    showError("ДОСТУП ЗАКРЫТ", uHash);
+                    showError("ДОСТУП ЗАКРЫТ", user.id);
                 }
             } catch (e) {
                 showError("СБОЙ СЕТИ", "Проверьте config.json");
