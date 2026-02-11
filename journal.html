@@ -3,57 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Журнал</title>
+    <title>Журнал смены</title>
     <style>
-        body { background: #0f0f0f; color: #fff; font-family: sans-serif; padding: 15px; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        :root { --bg: #121212; --card: #1e1e1e; --accent-log: #4CD964; --text: #e0e0e0; --danger: #FF3B30; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; display: flex; flex-direction: column; align-items: center; }
         .header { width: 100%; max-width: 450px; display: flex; align-items: center; margin-bottom: 20px; }
-        .back { font-size: 30px; color: #4CD964; text-decoration: none; padding-right: 20px; }
-        .card { background: #1a1a1a; padding: 15px; border-radius: 15px; width: 100%; max-width: 420px; box-sizing: border-box; }
-        input { width: 100%; padding: 12px; margin-bottom: 10px; background: #222; border: 1px solid #333; border-radius: 10px; color: white; font-size: 18px; box-sizing: border-box; }
-        .log-item { background: #222; padding: 15px; margin-top: 10px; border-radius: 12px; display: flex; justify-content: space-between; border-left: 5px solid #4CD964; width: 100%; box-sizing: border-box; }
+        .back-btn { font-size: 30px; color: var(--accent-log); cursor: pointer; text-decoration: none; padding-right: 20px; }
+        .container { width: 100%; max-width: 450px; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 12px; color: #888; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; background: #2c2c2c; border: 1px solid #333; border-radius: 8px; color: white; font-size: 18px; box-sizing: border-box; outline: none; }
+        .add-btn-log { width: 100%; padding: 18px; background: var(--accent-log); color: #000; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .stats-line { text-align: center; font-size: 16px; font-weight: bold; color: var(--accent-log); margin-bottom: 15px; }
+        .log-item { background: #252525; padding: 12px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 6px solid var(--accent-log); }
+        .log-desc { font-size: 18px; font-weight: bold; }
+        .del-log { color: var(--danger); font-size: 28px; padding-left: 15px; cursor: pointer; }
+        .clear-link { color: #444; font-size: 12px; cursor: pointer; text-decoration: underline; display: block; text-align: right; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <a href="index.html" class="back">‹</a>
+        <a href="index.html" class="back-btn">‹</a>
         <h2>Журнал</h2>
     </div>
 
-    <div class="card">
-        <div id="stat" style="text-align:center;color:#4CD964;font-weight:bold;margin-bottom:10px;">0 шт | 0.000 м³</div>
-        <input type="number" id="ld" placeholder="Диаметр (мм)">
-        <input type="number" id="ll" value="6.0" step="0.1">
-        <button onclick="addLog()" style="width:100%;padding:18px;background:#4CD964;color:black;border:none;border-radius:12px;font-weight:bold;">ЗАПИСАТЬ</button>
+    <div class="container">
+        <div class="card">
+            <div class="stats-line" id="stats-summary">За смену: 0 шт. | 0.000 м³ (ГОСТ)</div>
+            <div style="display: flex; gap: 10px;">
+                <div style="flex:2"><label>Диаметр (мм)</label><input type="number" id="log-size" placeholder="240"></div>
+                <div style="flex:1"><label>Длина (м)</label><input type="number" id="log-len" value="6.0" step="0.1"></div>
+            </div>
+            <label>Заметка</label><input type="text" id="log-note" placeholder="—">
+            <button class="add-btn-log" onclick="addToJournal()">ЗАПИСАТЬ БРЕВНО</button>
+        </div>
+        <div id="journal-list"></div>
+        <span onclick="clearJournal()" class="clear-link">Очистить смену</span>
     </div>
 
-    <div id="log-list" style="width:100%; max-width:420px;"></div>
-    <p onclick="localStorage.removeItem('logs');render();" style="color:#444;font-size:12px;text-decoration:underline;margin-top:20px;cursor:pointer;">Очистить</p>
-
     <script>
-        if (sessionStorage.getItem('is_auth') !== 'true') {
-            window.location.href = 'index.html';
-        }
-        function addLog() {
-            const d = parseInt(document.getElementById('ld').value), l = parseFloat(document.getElementById('ll').value);
-            if(!d) return;
-            const vol = (Math.PI * Math.pow(d/2000, 2) * l).toFixed(3);
-            const logs = JSON.parse(localStorage.getItem('logs') || "[]");
-            logs.unshift({d, l, v: vol, t: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
-            localStorage.setItem('logs', JSON.stringify(logs));
-            document.getElementById('ld').value = ''; render();
+        if (sessionStorage.getItem('is_auth') !== 'true') { window.location.href = 'index.html'; }
+        const LOG_KEY = 'sawmill_journal_v3';
+        const GOST_REF = { 14:[0.06,0.09,0.12,0.15], 16:[0.07,0.11,0.16,0.19], 18:[0.10,0.14,0.19,0.24], 20:[0.12,0.17,0.23,0.30], 22:[0.15,0.21,0.28,0.36], 24:[0.18,0.25,0.33,0.43], 26:[0.21,0.29,0.39,0.50], 28:[0.25,0.34,0.45,0.58], 30:[0.28,0.39,0.52,0.67], 32:[0.33,0.45,0.59,0.76], 34:[0.37,0.51,0.66,0.85], 36:[0.41,0.57,0.74,0.95], 38:[0.46,0.63,0.83,1.06], 40:[0.51,0.70,0.92,1.17] };
+
+        function calculateGost(diamMm, lenM) {
+            let d = Math.round(diamMm / 10);
+            if (d < 14) return (Math.PI * Math.pow(diamMm/2000, 2) * lenM).toFixed(3);
+            let ds = Object.keys(GOST_REF).map(Number).sort((a,b)=>a-b);
+            let dL = ds.filter(x => x <= d).pop() || ds;
+            let dU = ds.filter(x => x >= d).shift() || ds[ds.length-1];
+            const getV = (dm, ln) => { let vs = GOST_REF[dm]; return ln <= 3.5 ? vs[0] : ln <= 4.5 ? vs[1] : ln <= 5.5 ? vs[2] : vs[3]; };
+            if (dL === dU) return getV(d, lenM).toFixed(3);
+            let v1 = getV(dL, lenM), v2 = getV(dU, lenM);
+            return (v1 + (v2 - v1) * (d - dL) / (dU - dL)).toFixed(3);
         }
 
-        function render() {
-            const logs = JSON.parse(localStorage.getItem('logs') || "[]");
-            const total = logs.reduce((s, i) => s + parseFloat(i.v), 0).toFixed(3);
-            document.getElementById('stat').innerText = `${logs.length} шт | ${total} м³`;
-            document.getElementById('log-list').innerHTML = logs.map(x => `<div class="log-item"><div><b>${x.d}мм</b> — ${x.v}м³</div><small>${x.t}</small></div>`).join('');
+        function addToJournal() {
+            const s = document.getElementById('log-size'), l = document.getElementById('log-len'), n = document.getElementById('log-note');
+            if (!s.value) return;
+            const vol = calculateGost(parseFloat(s.value), parseFloat(l.value));
+            let logs = JSON.parse(localStorage.getItem(LOG_KEY) || "[]");
+            logs.unshift({ id: Date.now(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), size: s.value, len: l.value, vol: vol, note: n.value || "—" });
+            localStorage.setItem(LOG_KEY, JSON.stringify(logs));
+            s.value = ''; n.value = ''; s.focus(); loadJournal();
         }
+
+        function loadJournal() {
+            const logs = JSON.parse(localStorage.getItem(LOG_KEY) || "[]");
+            const totalVol = logs.reduce((sum, item) => sum + parseFloat(item.vol), 0).toFixed(3);
+            document.getElementById('stats-summary').innerText = `За смену: ${logs.length} шт. | ${totalVol} м³`;
+            document.getElementById('journal-list').innerHTML = logs.map(item => `
+                <div class="log-item">
+                    <div><div style="font-size:11px; color:#666;">${item.time} • ${item.len}м</div>
+                    <div class="log-desc">${item.size} мм <span style="color:var(--accent-log); font-size:15px; margin-left:10px;">${item.vol} м³</span></div>
+                    <div style="font-size:12px; color:#555;">${item.note}</div></div>
+                    <div class="del-log" onclick="deleteLog(${item.id})">×</div>
+                </div>`).join('');
+        }
+
+        function deleteLog(id) { if (confirm("Удалить?")) { let logs = JSON.parse(localStorage.getItem(LOG_KEY) || "[]").filter(l => l.id !== id); localStorage.setItem(LOG_KEY, JSON.stringify(logs)); loadJournal(); } }
+        function clearJournal() { if (confirm("Очистить?")) { localStorage.removeItem(LOG_KEY); loadJournal(); } }
 
         window.onload = () => {
-            const tmp = localStorage.getItem('tmp_val');
-            if(tmp) { document.getElementById('ld').value = tmp; localStorage.removeItem('tmp_val'); }
-            render();
+            const tmp = localStorage.getItem('tmp_size');
+            if(tmp) { document.getElementById('log-size').value = tmp; localStorage.removeItem('tmp_size'); }
+            loadJournal();
         };
     </script>
 </body>
