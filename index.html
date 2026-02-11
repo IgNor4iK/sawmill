@@ -87,36 +87,47 @@
         }
 
         async function checkAuth() {
-            const user = tg.initDataUnsafe?.user;
-            if (!user) {
-                document.getElementById('auth-screen').style.display = 'block';
-                document.getElementById('user-hash-box').innerText = "Ошибка: Запустите в TG";
+            // 1. Проверяем, есть ли уже сохраненный флаг входа (чтобы не моргать экраном ошибки)
+            if (localStorage.getItem('is_auth') === 'true') {
+                const isAdmin = localStorage.getItem('is_admin') === 'true';
+                renderMenu(isAdmin, localStorage.getItem('user_name') || "Пилорама");
+                // Параллельно обновим данные из ТГ, если они доступны
+                if (tg.initDataUnsafe?.user) {
+                    localStorage.setItem('user_name', tg.initDataUnsafe.user.first_name);
+                }
                 return;
             }
+        
+            const user = tg.initDataUnsafe?.user;
+            if (!user) {
+                // Даем Telegram 500мс на раздумья, иногда он тупит при загрузке
+                setTimeout(async () => {
+                    const retryUser = tg.initDataUnsafe?.user;
+                    if (!retryUser) {
+                        document.getElementById('auth-screen').style.display = 'block';
+                        document.getElementById('user-hash-box').innerText = "Ошибка: Запустите в TG";
+                    } else {
+                        processAuth(retryUser);
+                    }
+                }, 500);
+                return;
+            }
+            processAuth(user);
+        }
 
+        async function processAuth(user) {
             const uHash = await makeHash(user.id);
-
             try {
-                // nocache обязателен, чтобы GitHub отдавал свежий JSON
                 const resp = await fetch('config.json?v=' + Date.now());
                 const config = await resp.json();
-
                 const isAdmin = (uHash === config.admin_hash);
-                const isUser = config.authorized_hashes && config.authorized_hashes.includes(uHash);
-
+                const isUser = config.authorized_hashes?.includes(uHash);
+        
                 if (isAdmin || isUser) {
-                    sessionStorage.setItem('is_auth', 'true');
-                    if (isAdmin) sessionStorage.setItem('is_admin', 'true');
-                    
-                    document.getElementById('main-menu').style.display = 'flex';
-                    document.getElementById('user-name').innerText = user.first_name;
-                    
-                    if (isAdmin) {
-                        const al = document.getElementById('admin-link');
-                        al.setAttribute('style', 'display: flex !important'); 
-                    }
-
-                    tg.expand(); tg.ready();
+                    localStorage.setItem('is_auth', 'true');
+                    localStorage.setItem('user_name', user.first_name);
+                    if (isAdmin) localStorage.setItem('is_admin', 'true');
+                    renderMenu(isAdmin, user.first_name);
                 } else {
                     showError(uHash);
                 }
@@ -124,7 +135,7 @@
                 showError(uHash);
             }
         }
-
+        
         function showError(hash) {
             document.getElementById('auth-screen').style.display = 'block';
             document.getElementById('user-hash-box').innerText = hash;
