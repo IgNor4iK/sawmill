@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Журнал</title>
+    <style>
+        body { background: #0f0f0f; color: #fff; font-family: sans-serif; padding: 15px; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        .header { width: 100%; max-width: 450px; display: flex; align-items: center; margin-bottom: 20px; }
+        .back { font-size: 30px; color: #4CD964; text-decoration: none; padding-right: 20px; }
+        .card { background: #1a1a1a; padding: 15px; border-radius: 15px; width: 100%; max-width: 420px; box-sizing: border-box; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; background: #222; border: 1px solid #333; border-radius: 10px; color: white; font-size: 18px; box-sizing: border-box; }
+        .log-item { background: #222; padding: 15px; margin-top: 10px; border-radius: 12px; display: flex; justify-content: space-between; border-left: 5px solid #4CD964; width: 100%; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back">‹</a>
+        <h2>Журнал</h2>
+    </div>
+
+    <div class="card">
+        <div id="stat" style="text-align:center;color:#4CD964;font-weight:bold;margin-bottom:10px;">0 шт | 0.000 м³</div>
+        <input type="number" id="ld" placeholder="Диаметр (мм)">
+        <input type="number" id="ll" value="6.0" step="0.1">
+        <button onclick="addLog()" style="width:100%;padding:18px;background:#4CD964;color:black;border:none;border-radius:12px;font-weight:bold;">ЗАПИСАТЬ</button>
+    </div>
+
+    <div id="log-list" style="width:100%; max-width:420px;"></div>
+    <p onclick="localStorage.removeItem('logs');render();" style="color:#444;font-size:12px;text-decoration:underline;margin-top:20px;cursor:pointer;">Очистить</p>
+
+    <script>
+        function addLog() {
+            const d = parseInt(document.getElementById('ld').value), l = parseFloat(document.getElementById('ll').value);
+            if(!d) return;
+            const vol = (Math.PI * Math.pow(d/2000, 2) * l).toFixed(3);
+            const logs = JSON.parse(localStorage.getItem('logs') || "[]");
+            logs.unshift({d, l, v: vol, t: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
+            localStorage.setItem('logs', JSON.stringify(logs));
+            document.getElementById('ld').value = ''; render();
+        }
+
+        function render() {
+            const logs = JSON.parse(localStorage.getItem('logs') || "[]");
+            const total = logs.reduce((s, i) => s + parseFloat(i.v), 0).toFixed(3);
+            document.getElementById('stat').innerText = `${logs.length} шт | ${total} м³`;
+            document.getElementById('log-list').innerHTML = logs.map(x => `<div class="log-item"><div><b>${x.d}мм</b> — ${x.v}м³</div><small>${x.t}</small></div>`).join('');
+        }
+
+        window.onload = () => {
+            const tmp = localStorage.getItem('tmp_val');
+            if(tmp) { document.getElementById('ld').value = tmp; localStorage.removeItem('tmp_val'); }
+            render();
+        };
+    </script>
+</body>
+</html>
