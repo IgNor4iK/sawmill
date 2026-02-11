@@ -24,47 +24,48 @@
     <p id="debug" class="gray">Скрипт загружен...</p>
 
     <script>
-        // ВПИШИ СВОЙ ID СЮДА
-        const MY_ID = 123456789; 
+    const MY_ID = 123456789; // ТВОЙ ID ЦИФРАМИ
 
-        function initApp() {
-            const status = document.getElementById('status');
-            const info = document.getElementById('info');
-            const debug = document.getElementById('debug');
+    function initApp() {
+        const status = document.getElementById('status');
+        const info = document.getElementById('info');
+        const debug = document.getElementById('debug');
 
-            debug.innerText = "Проверка Telegram API...";
+        // Проверяем наличие объекта Telegram
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
 
-            // Безопасная проверка: есть ли объект Telegram
-            const tg = window.Telegram ? window.Telegram.WebApp : null;
-
-            if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
-                status.innerText = "ОТКРОЙ В БОТЕ";
-                status.className = "red";
-                info.innerText = "В обычном браузере данные Telegram недоступны.";
-                debug.innerText = "Telegram WebApp не найден.";
-                return;
-            }
-
-            const user = tg.initDataUnsafe.user;
-            debug.innerText = "Пользователь найден: " + user.id;
-
-            if (user.id === MY_ID) {
-                status.innerText = "ДОСТУП РАЗРЕШЕН";
-                status.className = "green";
-                info.innerText = "Привет, " + user.first_name + "! База готова.";
-                tg.expand();
-                tg.ready();
-            } else {
-                status.innerText = "ДОСТУП ЗАПРЕЩЕН";
-                status.className = "red";
-                info.innerHTML = "Ваш ID: <b>" + user.id + "</b><br>Впишите его в код.";
-            }
+        if (!tg) {
+            debug.innerText = "Библиотека Telegram не загружена (битая ссылка или нет JS)";
+            return;
         }
 
-        // Запускаем через небольшую паузу для надежности
-        window.onload = () => {
-            setTimeout(initApp, 300);
-        };
-    </script>
+        // Проверяем, есть ли данные инициализации
+        const initData = tg.initDataUnsafe;
+        const user = initData?.user;
+
+        if (!user) {
+            status.innerText = "ДАННЫЕ ПУСТЫ";
+            info.innerHTML = "Бот открыт как сайт, а не как Mini App.<br>Запусти через <b>Кнопку Меню</b> в боте!";
+            debug.innerText = "initDataUnsafe.user: undefined";
+            return;
+        }
+
+        debug.innerText = "Вижу пользователя: " + user.id;
+
+        if (user.id === MY_ID) {
+            status.innerText = "ДОСТУП РАЗРЕШЕН";
+            status.className = "green";
+            info.innerText = "Привет, " + user.first_name + "!";
+            tg.expand();
+            tg.ready();
+        } else {
+            status.innerText = "ДОСТУП ЗАПРЕЩЕН";
+            status.className = "red";
+            info.innerHTML = "Твой ID: <b>" + user.id + "</b><br>Впиши его в код на GitHub!";
+        }
+    }
+
+    window.onload = () => { setTimeout(initApp, 500); };
+</script>
 </body>
 </html>
