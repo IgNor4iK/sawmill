@@ -3,139 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sawmill OS v4.2</title>
-    <!-- Официальная библиотека Telegram -->
-    <script src="https://telegram.org"></script>
+    <title>Sawmill Debug v5.0</title>
     <style>
-        :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #007AFF; --green: #4CD964; --text: #ffffff; --text-dim: #888; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        
-        #auth-screen { display: flex; flex-direction: column; align-items: center; padding: 100px 20px; text-align: center; width: 100%; }
-        #main-menu { display: none; padding: 20px; flex-direction: column; align-items: center; width: 100%; box-sizing: border-box; }
-        
-        .welcome { text-align: center; margin-bottom: 30px; }
-        .welcome h1 { margin: 0; font-size: 26px; color: var(--accent); }
-        .welcome p { color: var(--text-dim); margin-top: 5px; font-size: 14px; }
-
-        .menu-grid { width: 100%; max-width: 400px; display: grid; gap: 12px; }
-        .menu-item { 
-            background: var(--card); padding: 20px; border-radius: 20px; 
-            display: flex; align-items: center; cursor: pointer; 
-            border: 1px solid #222; text-decoration: none; color: white;
-            transition: transform 0.1s;
-        }
-        .menu-item:active { transform: scale(0.97); background: #222; }
-        
-        .menu-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-right: 15px; background: #222; }
-        .menu-info h3 { margin: 0; font-size: 17px; }
-        .menu-info p { margin: 2px 0 0; font-size: 12px; color: var(--text-dim); }
-
-        #admin-link { display: none; border-color: var(--accent); background: rgba(0,122,255,0.05); }
-        #user-hash-box { font-family: monospace; font-size: 10px; color: #555; background: #000; padding: 10px; margin-top: 30px; word-break: break-all; border-radius: 8px; width: 80%; }
+        :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #007AFF; --text: #ffffff; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; text-align: center; }
+        #log { font-family: monospace; font-size: 11px; text-align: left; background: #000; padding: 10px; border-radius: 8px; margin-top: 20px; color: #0f0; overflow-y: auto; max-height: 200px; }
+        .hidden { display: none; }
+        .menu-item { background: var(--card); padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #333; text-decoration: none; color: white; display: block; }
     </style>
 </head>
 <body>
 
-    <div id="auth-screen">
-        <h2 id="status-title" style="color:var(--accent);">ЗАГРУЗКА...</h2>
-        <div id="user-hash-box">Ожидание инициализации...</div>
+    <div id="status-box">
+        <h2 id="title">ИНИЦИАЛИЗАЦИЯ...</h2>
+        <div id="log">Запуск системы...<br></div>
     </div>
 
-    <div id="main-menu">
-        <div class="welcome">
-            <h1 id="user-name">Пилорама</h1>
-            <p>Панель инструментов</p>
-        </div>
-        
+    <div id="main-menu" class="hidden">
+        <h1>Пилорама приветствует!</h1>
         <div class="menu-grid">
-            <a href="calc.html" class="menu-item">
-                <div class="menu-icon" style="color: var(--accent);">📏</div>
-                <div class="menu-info"><h3>Калькулятор</h3><p>Метки и пропилы</p></div>
-            </a>
-            <a href="journal.html" class="menu-item">
-                <div class="menu-icon" style="color: var(--green);">📋</div>
-                <div class="menu-info"><h3>Журнал</h3><p>Учет кубатуры</p></div>
-            </a>
-            <a href="gost.html" class="menu-item">
-                <div class="menu-icon" style="color: #FF9500;">📑</div>
-                <div class="menu-info"><h3>ГОСТ 2708-75</h3><p>Справочник</p></div>
-            </a>
-            <a href="users.html" id="admin-link" class="menu-item">
-                <div class="menu-icon">👥</div>
-                <div class="menu-info"><h3>Пользователи</h3><p>Админ-панель</p></div>
-            </a>
+            <a href="calc.html" class="menu-item">📏 Калькулятор</a>
+            <a href="journal.html" class="menu-item">📋 Журнал</a>
         </div>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
+        const logBox = document.getElementById('log');
+        function logger(msg) {
+            logBox.innerHTML += "> " + msg + "<br>";
+            console.log(msg);
+        }
 
-        function showError(title, hash) {
-            document.getElementById('status-title').innerText = title;
-            document.getElementById('status-title').style.color = '#ff3b30';
-            document.getElementById('user-hash-box').innerText = hash;
-        }
-        
-        function showMenu(isAdmin, name) {
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('main-menu').style.display = 'flex';
-            if (name) document.getElementById('user-name').innerText = name;
-            if (isAdmin) document.getElementById('admin-link').style.display = 'flex';
-            tg.HapticFeedback?.notificationOccurred('success');
-        }
-        
         async function makeHash(id) {
             const buf = new TextEncoder().encode(id.toString());
             const hashBuf = await crypto.subtle.digest('SHA-256', buf);
             return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
-        
-        async function startLogic() {
+
+        async function startApp() {
+            const tg = window.Telegram.WebApp;
+            logger("Библиотека найдена. Версия: " + tg.version);
+            
+            tg.ready();
+            tg.expand();
+
+            const user = tg.initDataUnsafe?.user;
+            if (!user) {
+                logger("Критическая ошибка: initData пуст. Вы точно в TG?");
+                document.getElementById('title').innerText = "ОШИБКА ДОСТУПА";
+                return;
+            }
+
+            logger("Пользователь: " + user.first_name + " (ID: " + user.id + ")");
+            
             try {
-                tg.ready();
-                tg.expand();
-        
-                const user = tg.initDataUnsafe?.user;
-                
-                if (!user) {
-                    showError("ОШИБКА", "Запустите внутри Telegram (initData empty)");
-                    return;
-                }
-        
                 const uHash = await makeHash(user.id);
+                logger("Ваш хэш сформирован.");
+
                 const resp = await fetch('config.json?v=' + Date.now());
+                if (!resp.ok) throw new Error("Не найден config.json (404)");
                 
-                if (!resp.ok) {
-                    showError("ОШИБКА КОНФИГА", "Файл config.json не найден в корне");
-                    return;
-                }
-        
                 const config = await resp.json();
+                logger("Конфиг успешно загружен.");
+
                 const isAdmin = (uHash === config.admin_hash);
-                const isAuthorized = config.authorized_hashes?.includes(uHash);
-        
-                if (isAdmin || isAuthorized) {
-                    showMenu(isAdmin, user.first_name);
+                const isUser = config.authorized_hashes?.includes(uHash);
+
+                if (isAdmin || isUser) {
+                    logger("Доступ разрешен! Входим...");
+                    document.getElementById('status-box').classList.add('hidden');
+                    document.getElementById('main-menu').classList.remove('hidden');
                 } else {
-                    showError("ДОСТУП ЗАКРЫТ", uHash);
+                    document.getElementById('title').innerText = "НЕТ ДОСТУПА";
+                    logger("Хэш отсутствует в списке разрешенных: " + uHash);
                 }
-            } catch (err) {
-                showError("CRITICAL ERROR", err.message);
+            } catch (e) {
+                logger("ОШИБКА: " + e.message);
+                document.getElementById('title').innerText = "СБОЙ СИСТЕМЫ";
             }
         }
-        
-        // Рекурсивная проверка готовности библиотеки
-        function bootstrap() {
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
-                startLogic();
-            } else {
-                // Если еще не загрузилось, пробуем через 100мс
-                setTimeout(bootstrap, 100);
-            }
-        }
-        
-        // Стартуем немедленно
-        bootstrap();
+
+        // Динамическая загрузка скрипта ТГ
+        logger("Загрузка telegram-web-app.js...");
+        const script = document.createElement('script');
+        script.src = "https://telegram.org";
+        script.onload = () => {
+            logger("Скрипт загружен в DOM.");
+            setTimeout(startApp, 200); // Небольшая пауза для прогрузки объекта
+        };
+        script.onerror = () => logger("НЕ УДАЛОСЬ СКАЧАТЬ СКРИПТ TELEGRAM!");
+        document.head.appendChild(script);
     </script>
 </body>
 </html>
