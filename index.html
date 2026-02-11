@@ -42,30 +42,44 @@
     <script>
         (function(){var a=window;a.Telegram={WebApp:{initDataUnsafe:{user:null},expand:function(){},ready:function(){},version:"6.0"}};var b=a.location.hash.slice(1);if(b){var c=new URLSearchParams(b);var d=c.get("tgWebAppData");if(d){var e=new URLSearchParams(d);var f=e.get("user");if(f){try{a.Telegram.WebApp.initDataUnsafe.user=JSON.parse(f)}catch(g){}}}}})();
         const tg = window.Telegram.WebApp;
-
+    
         async function makeHash(id) {
             const buf = new TextEncoder().encode(id.toString());
             const hashBuf = await crypto.subtle.digest('SHA-256', buf);
             return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
-
+    
         async function check() {
+            // Если в этой сессии уже входили — пускаем сразу
+            if (sessionStorage.getItem('is_auth') === 'true') {
+                showMenu();
+                return;
+            }
+    
             const user = tg.initDataUnsafe?.user;
             if (!user) { document.getElementById('auth-screen').style.display='flex'; return; }
+            
             const uHash = await makeHash(user.id);
             try {
                 const resp = await fetch('config.json?v=' + Date.now());
                 const config = await resp.json();
+                
                 if (uHash === config.admin_hash || config.authorized_hashes.includes(uHash)) {
-                    document.getElementById('main-menu').style.display = 'flex';
-                    document.getElementById('user-display').innerText = user.first_name;
-                    tg.expand(); tg.ready();
+                    sessionStorage.setItem('is_auth', 'true'); // Запоминаем вход
+                    showMenu(user.first_name);
                 } else { throw "No"; }
             } catch (e) {
-                document.getElementById('auth-screen').style.display = 'flex';
+                document.getElementById('auth-screen').style.display='flex';
                 document.getElementById('user-hash').innerText = uHash;
             }
         }
+    
+        function showMenu(name) {
+            document.getElementById('main-menu').style.display = 'flex';
+            if(name) document.getElementById('user-display').innerText = name;
+            tg.expand(); tg.ready();
+        }
+        
         window.onload = check;
     </script>
 </body>
