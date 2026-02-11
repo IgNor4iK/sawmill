@@ -1,64 +1,149 @@
-!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sawmill Offline Mode</title>
+    <title>Sawmill OS Pro</title>
     <style>
-        body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-        .card { border: 2px solid #007AFF; padding: 25px; border-radius: 15px; background: #1a1a1a; margin-top: 50px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        #debug { font-size: 11px; color: #555; margin-top: 30px; text-align: left; background: #000; padding: 10px; border-radius: 5px; }
-        .green { color: #4CD964; } .red { color: #FF3B30; }
+        :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #007AFF; --green: #4CD964; --text: #ffffff; --text-dim: #888; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
+        
+        /* Авторизация */
+        #auth-screen { display: none; padding: 100px 20px; text-align: center; }
+        #user-hash-info { font-family: monospace; font-size: 10px; color: #444; background: #000; padding: 10px; margin-top: 20px; word-break: break-all; }
+
+        /* Dashboard */
+        #main-menu { display: none; padding: 20px; flex-direction: column; align-items: center; }
+        .welcome { text-align: center; margin-bottom: 40px; margin-top: 20px; }
+        .welcome h1 { margin: 0; font-size: 28px; color: var(--accent); }
+        .menu-grid { width: 100%; max-width: 400px; display: grid; gap: 15px; }
+        .menu-item { background: var(--card); padding: 20px; border-radius: 20px; display: flex; align-items: center; cursor: pointer; border: 1px solid #222; }
+        .menu-icon { width: 50px; height: 50px; background: #222; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-right: 15px; }
+        
+        /* Страницы */
+        .page { display: none; width: 100%; max-width: 450px; padding: 15px; box-sizing: border-box; margin: 0 auto; }
+        .header { display: flex; align-items: center; margin-bottom: 20px; }
+        .back-btn { font-size: 30px; color: var(--accent); padding-right: 20px; cursor: pointer; }
+        .card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 11px; color: var(--text-dim); }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; background: #222; border: 1px solid #333; border-radius: 10px; color: white; font-size: 18px; box-sizing: border-box; outline: none; }
+        .btn-action { width: 100%; padding: 18px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .res-item { background: #222; padding: 15px; border-radius: 12px; margin-top: 10px; display: flex; justify-content: space-between; font-weight: bold; border-left: 5px solid var(--accent); }
+        .log-item { background: #222; padding: 15px; margin-top: 10px; border-radius: 12px; display: flex; justify-content: space-between; border-left: 5px solid var(--green); }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2 id="status">АВТОНОМНЫЙ ЗАПУСК</h2>
-        <p id="info">Проверка встроенного API...</p>
+    <div id="auth-screen">
+        <h2 style="color:#ff3b30;">ДОСТУП ЗАКРЫТ</h2>
+        <div id="user-hash-info">Загрузка ключа...</div>
     </div>
 
-    <div id="debug">Логи системы:<br></div>
+    <div id="main-menu">
+        <div class="welcome"><h1 id="user-display">Пилорама</h1><p>С возвращением!</p></div>
+        <div class="menu-grid">
+            <div class="menu-item" onclick="showPage('p-calc')"><div class="menu-icon">📏</div><div><h3>Калькулятор</h3><p style="font-size:12px;color:var(--text-dim)">Метки и пропилы</p></div></div>
+            <div class="menu-item" onclick="showPage('p-journ')"><div class="menu-icon">📋</div><div><h3>Журнал</h3><p style="font-size:12px;color:var(--text-dim)">Учет кубатуры</p></div></div>
+            <div class="menu-item" onclick="window.Telegram.WebApp.close()"><div class="menu-icon">🚪</div><div><h3>Выход</h3></div></div>
+        </div>
+    </div>
+
+    <div id="p-calc" class="page">
+        <div class="header"><div class="back-btn" onclick="showMain()">‹</div><h2>Калькулятор</h2></div>
+        <div class="card">
+            <input type="number" id="h" value="250" oninput="doCalc()" placeholder="Высота">
+            <input type="number" id="k" value="3" oninput="doCalc()" placeholder="Пила">
+            <input type="number" id="b" value="50" oninput="doCalc()" placeholder="База">
+        </div>
+        <div id="rows-box"></div>
+        <button class="btn-action" style="background:#333;color:white;" onclick="addRow(25,10)">+ РАЗМЕР</button>
+        <div id="res-box" style="margin-top:20px;"></div>
+    </div>
+
+    <div id="p-journ" class="page">
+        <div class="header"><div class="back-btn" onclick="showMain()">‹</div><h2>Журнал</h2></div>
+        <div class="card">
+            <div id="total-stats" style="text-align:center;color:var(--green);font-weight:bold;margin-bottom:10px;">0 шт | 0.000 м³</div>
+            <div style="display:flex; gap:10px;">
+                <div style="flex:2"><input type="number" id="ld" placeholder="Диаметр (мм)"></div>
+                <div style="flex:1"><input type="number" id="ll" value="6.0" step="0.1"></div>
+            </div>
+            <button class="btn-action" style="background:var(--green);color:black;" onclick="addLog()">ЗАПИСАТЬ</button>
+        </div>
+        <div id="log-list"></div>
+        <p onclick="clearLog()" style="text-align:center;color:#444;font-size:11px;margin-top:20px;text-decoration:underline;cursor:pointer;">Очистить смену</p>
+    </div>
 
     <script>
-        // ВСТРОЕННАЯ МИНИ-БИБЛИОТЕКА TELEGRAM (чтобы не качать извне)
-        (function(){var a=window;a.Telegram={WebApp:{initDataUnsafe:{user:null},expand:function(){},ready:function(){},version:"6.0"}};var b=a.location.hash.slice(1);if(b){var c=new URLSearchParams(b);var d=c.get("tgWebAppData");if(d){var e=new URLSearchParams(d);var f=e.get("user");if(f){try{a.Telegram.WebApp.initDataUnsafe.user=JSON.parse(f)}catch(g){}}}}})();
+        (function(){var a=window;a.Telegram={WebApp:{initDataUnsafe:{user:null},expand:function(){},ready:function(){},close:function(){},version:"6.0"}};var b=a.location.hash.slice(1);if(b){var c=new URLSearchParams(b);var d=c.get("tgWebAppData");if(d){var e=new URLSearchParams(d);var f=e.get("user");if(f){try{a.Telegram.WebApp.initDataUnsafe.user=JSON.parse(f)}catch(g){}}}}})();
+        const tg = window.Telegram.WebApp;
 
-        function log(m) { document.getElementById('debug').innerHTML += "> " + m + "<br>"; }
+        async function makeHash(id) {
+            const buf = new TextEncoder().encode(id.toString());
+            const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+            return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
 
-        // ВПИШИ СВОЙ ID СЮДА
-        const MY_ID = 123456789; 
-
-        function run() {
-            log("Запуск встроенного скрипта...");
-            const tg = window.Telegram.WebApp;
-            
-            log("API инициализировано. Версия: " + tg.version);
-
+        async function checkAuth() {
             const user = tg.initDataUnsafe?.user;
-
-            if (!user) {
-                log("Ошибка: Данные пользователя не найдены в ссылке.");
-                document.getElementById('status').innerText = "ОТКРОЙ В БОТЕ";
-                document.getElementById('status').className = "red";
-                document.getElementById('info').innerHTML = "Запусти через <b>Кнопку Меню</b> в боте.<br><small>Если открываешь через кнопку и видишь это — обнови Telegram.</small>";
-                return;
-            }
-
-            log("Найден пользователь: " + user.id);
-
-            if (user.id === MY_ID) {
-                document.getElementById('status').innerText = "ДОСТУП РАЗРЕШЕН";
-                document.getElementById('status').className = "green";
-                document.getElementById('info').innerText = "Привет, " + user.first_name + "! Теперь всё работает автономно.";
-            } else {
-                document.getElementById('status').innerText = "ДОСТУП ЗАКРЫТ";
-                document.getElementById('status').className = "red";
-                document.getElementById('info').innerHTML = "Ваш ID: <b>" + user.id + "</b><br>Впишите его в код на GitHub!";
+            if (!user) { document.getElementById('auth-screen').style.display='block'; return; }
+            const uHash = await makeHash(user.id);
+            try {
+                const resp = await fetch('config.json?v=' + Date.now());
+                const config = await resp.json();
+                if (uHash === config.admin_hash || (config.authorized_hashes && config.authorized_hashes.includes(uHash))) {
+                    document.getElementById('main-menu').style.display = 'flex';
+                    document.getElementById('user-display').innerText = user.first_name;
+                    tg.expand(); tg.ready();
+                } else { throw "Denied"; }
+            } catch (e) {
+                document.getElementById('auth-screen').style.display = 'block';
+                document.getElementById('user-hash-info').innerText = uHash;
             }
         }
 
-        window.onload = run;
+        function showPage(id) { document.getElementById('main-menu').style.display='none'; document.getElementById(id).style.display='block'; }
+        function showMain() { document.querySelectorAll('.page').forEach(p=>p.style.display='none'); document.getElementById('main-menu').style.display='flex'; }
+
+        function doCalc() {
+            const h=parseFloat(document.getElementById('h').value), k=parseFloat(document.getElementById('k').value), b=parseFloat(document.getElementById('b').value);
+            let cur=b, m=[];
+            document.querySelectorAll('.r-i').forEach(r=>{
+                let t=parseFloat(r.querySelector('.t').value), c=parseInt(r.querySelector('.c').value);
+                for(let j=0;j<c;j++){ if(cur+t+k<=h){ cur+=(t+k); m.push({v:cur.toFixed(1),s:t}); } }
+            });
+            document.getElementById('res-box').innerHTML = m.slice().reverse().map(x=>`<div class="res-item" onclick="toL(${x.v})"><span>${x.s}мм</span><span>${x.v}</span></div>`).join('');
+            localStorage.setItem('sw_v7', JSON.stringify({h,k,b,rs:Array.from(document.querySelectorAll('.r-i')).map(r=>({t:r.querySelector('.t').value,c:r.querySelector('.c').value}))}));
+        }
+
+        function addRow(t=25,c=10,s=true){
+            const d=document.createElement('div'); d.className='r-i';
+            d.innerHTML=`<div class="row-group"><input type="number" class="t" value="${t}" oninput="doCalc()"><input type="number" class="c" value="${c}" oninput="doCalc()"><button onclick="this.parentElement.parentElement.remove();doCalc()" style="background:none;border:none;color:red;font-size:20px;">×</button></div>`;
+            document.getElementById('rows-box').appendChild(d); if(s) doCalc();
+        }
+
+        function addLog(){
+            const d=parseInt(document.getElementById('ld').value), l=parseFloat(document.getElementById('ll').value); if(!d)return;
+            const logs=JSON.parse(localStorage.getItem('sl_v7')||"[]");
+            logs.unshift({d,l,v:(Math.PI*Math.pow(d/2000,2)*l).toFixed(3),t:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
+            localStorage.setItem('sl_v7', JSON.stringify(logs)); document.getElementById('ld').value=''; renderLog();
+        }
+
+        function renderLog(){
+            const logs=JSON.parse(localStorage.getItem('sl_v7')||"[]");
+            document.getElementById('total-stats').innerText = `${logs.length} шт | ${logs.reduce((a,b)=>a+parseFloat(b.v),0).toFixed(3)} м³`;
+            document.getElementById('log-list').innerHTML = logs.map(i=>`<div class="log-item"><div><b>${i.d}мм</b> — ${i.v}м³</div><small>${i.t}</small></div>`).join('');
+        }
+
+        function toL(v){ document.getElementById('ld').value=Math.round(v); showPage('p-journ'); }
+        function clearLog(){ if(confirm("Очистить?")){ localStorage.removeItem('sl_v7'); renderLog(); }}
+
+        window.onload = () => {
+            checkAuth();
+            const sv = JSON.parse(localStorage.getItem('sw_v7'));
+            if(sv){ document.getElementById('h').value=sv.h; document.getElementById('k').value=sv.k; document.getElementById('b').value=sv.b; sv.rs.forEach(r=>addRow(r.t,r.c,false)); } else { addRow(); }
+            renderLog();
+        };
     </script>
 </body>
 </html>
