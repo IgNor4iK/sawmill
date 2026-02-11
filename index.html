@@ -3,19 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sawmill OS v4.1</title>
+    <title>Sawmill OS v4.2</title>
+    <!-- Официальная библиотека Telegram -->
     <script src="https://telegram.org"></script>
-    <script>
-        const tg = window.Telegram.WebApp;
-    </script>
     <style>
         :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #007AFF; --green: #4CD964; --text: #ffffff; --text-dim: #888; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        #auth-screen { display: none; padding: 100px 20px; text-align: center; }
+        #auth-screen { display: flex; flex-direction: column; align-items: center; padding: 100px 20px; text-align: center; width: 100%; }
         #main-menu { display: none; padding: 20px; flex-direction: column; align-items: center; width: 100%; box-sizing: border-box; }
         
-        .welcome { text-align: center; margin-bottom: 30px; margin-top: 10px; }
+        .welcome { text-align: center; margin-bottom: 30px; }
         .welcome h1 { margin: 0; font-size: 26px; color: var(--accent); }
         .welcome p { color: var(--text-dim); margin-top: 5px; font-size: 14px; }
 
@@ -28,23 +26,19 @@
         }
         .menu-item:active { transform: scale(0.97); background: #222; }
         
-        .menu-icon { 
-            width: 45px; height: 45px; border-radius: 12px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 22px; margin-right: 15px; background: #222;
-        }
+        .menu-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-right: 15px; background: #222; }
         .menu-info h3 { margin: 0; font-size: 17px; }
         .menu-info p { margin: 2px 0 0; font-size: 12px; color: var(--text-dim); }
 
         #admin-link { display: none; border-color: var(--accent); background: rgba(0,122,255,0.05); }
-        #user-hash-box { font-family: monospace; font-size: 10px; color: #444; background: #000; padding: 10px; margin-top: 30px; word-break: break-all; border-radius: 8px; }
+        #user-hash-box { font-family: monospace; font-size: 10px; color: #555; background: #000; padding: 10px; margin-top: 30px; word-break: break-all; border-radius: 8px; width: 80%; }
     </style>
 </head>
 <body>
 
     <div id="auth-screen">
-        <h2 style="color:#ff3b30;">ДОСТУП ЗАКРЫТ</h2>
-        <div id="user-hash-box">Проверка авторизации...</div>
+        <h2 id="status-title" style="color:var(--accent);">ЗАГРУЗКА...</h2>
+        <div id="user-hash-box">Ожидание инициализации...</div>
     </div>
 
     <div id="main-menu">
@@ -74,68 +68,66 @@
     </div>
 
     <script>
-        //(function(){var a=window;a.Telegram={WebApp:{initDataUnsafe:{user:null},expand:function(){},ready:function(){},version:"6.0"}};var b=a.location.hash.slice(1);if(b){var c=new URLSearchParams(b);var d=c.get("tgWebAppData");if(d){var e=new URLSearchParams(d);var f=e.get("user");if(f){try{a.Telegram.WebApp.initDataUnsafe.user=JSON.parse(f)}catch(g){}}}}})();
+        const tg = window.Telegram.WebApp;
 
-    async function makeHash(id) {
-        const buf = new TextEncoder().encode(id.toString());
-        const hashBuf = await crypto.subtle.digest('SHA-256', buf);
-        return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    async function checkAuth() {
-        tg.ready(); // Сообщаем TG, что загрузились
-        tg.expand(); // Раскрываем на весь экран
-    
-        // Проверяем данные напрямую из объекта библиотеки
-        const user = tg.initDataUnsafe?.user;
-    
-        if (!user) {
-            // Если открыли просто в браузере, а не в ТГ
-            showError("Запустите через Telegram");
-            return;
+        // Хэширование ID
+        async function makeHash(id) {
+            const buf = new TextEncoder().encode(id.toString());
+            const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+            return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
-    }
 
-    processAuth(user);
-        async function processAuth(user) {
+        async function initApp() {
+            tg.ready();
+            tg.expand();
+
+            const user = tg.initDataUnsafe?.user;
+            
+            if (!user) {
+                showError("ДОСТУП ЗАКРЫТ", "Запустите приложение внутри Telegram");
+                return;
+            }
+
             try {
                 const uHash = await makeHash(user.id);
+                // Загружаем конфиг (nocache чтобы гитхаб не тупил)
                 const resp = await fetch('config.json?v=' + Date.now());
+                if (!resp.ok) throw new Error("Ошибка загрузки config.json");
+                
                 const config = await resp.json();
 
                 const isAdmin = (uHash === config.admin_hash);
-                const isUser = config.authorized_hashes?.includes(uHash);
+                const isAuthorized = config.authorized_hashes?.includes(uHash);
 
-                if (isAdmin || isUser) {
-                    localStorage.setItem('is_auth', 'true');
-                    localStorage.setItem('user_name', user.first_name);
-                    if (isAdmin) localStorage.setItem('is_admin', 'true');
-                    renderMenu(isAdmin, user.first_name);
+                if (isAdmin || isAuthorized) {
+                    showMenu(isAdmin, user.first_name);
                 } else {
-                    localStorage.clear();
-                    showError(uHash);
+                    showError("ДОСТУП ЗАКРЫТ", uHash);
                 }
-            } catch (e) {
-                if (localStorage.getItem('is_auth') !== 'true') showError("Ошибка сети или конфига");
+            } catch (err) {
+                showError("ОШИБКА СЕТИ", "Не удалось загрузить конфиг доступа");
+                console.error(err);
             }
         }
 
-        function renderMenu(isAdmin, name) {
+        function showMenu(isAdmin, name) {
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('main-menu').style.display = 'flex';
             if (name) document.getElementById('user-name').innerText = name;
             if (isAdmin) document.getElementById('admin-link').style.display = 'flex';
-            tg.expand();
-            tg.ready();
+            
+            // Легкая вибрация при успешном входе
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
-        function showError(hash) {
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('auth-screen').style.display = 'block';
+        function showError(title, hash) {
+            document.getElementById('status-title').innerText = title;
+            document.getElementById('status-title').style.color = '#ff3b30';
             document.getElementById('user-hash-box').innerText = hash;
         }
 
-        window.onload = checkAuth;
+        // Запуск при полной загрузке страницы
+        window.addEventListener('load', initApp);
     </script>
 </body>
 </html>
