@@ -30,6 +30,9 @@
     <p onclick="localStorage.removeItem('logs');render();" style="color:#444;font-size:12px;text-decoration:underline;margin-top:20px;cursor:pointer;">Очистить</p>
 
     <script>
+        if (sessionStorage.getItem('is_auth') !== 'true') {
+            window.location.href = 'index.html';
+        }
         function addLog() {
             const d = parseInt(document.getElementById('ld').value), l = parseFloat(document.getElementById('ll').value);
             if(!d) return;
