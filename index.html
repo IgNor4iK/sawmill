@@ -76,34 +76,27 @@
     <script>
         //(function(){var a=window;a.Telegram={WebApp:{initDataUnsafe:{user:null},expand:function(){},ready:function(){},version:"6.0"}};var b=a.location.hash.slice(1);if(b){var c=new URLSearchParams(b);var d=c.get("tgWebAppData");if(d){var e=new URLSearchParams(d);var f=e.get("user");if(f){try{a.Telegram.WebApp.initDataUnsafe.user=JSON.parse(f)}catch(g){}}}}})();
 
-        async function makeHash(id) {
-            const buf = new TextEncoder().encode(id.toString());
-            const hashBuf = await crypto.subtle.digest('SHA-256', buf);
-            return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    async function makeHash(id) {
+        const buf = new TextEncoder().encode(id.toString());
+        const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+        return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function checkAuth() {
+        tg.ready(); // Сообщаем TG, что загрузились
+        tg.expand(); // Раскрываем на весь экран
+    
+        // Проверяем данные напрямую из объекта библиотеки
+        const user = tg.initDataUnsafe?.user;
+    
+        if (!user) {
+            // Если открыли просто в браузере, а не в ТГ
+            showError("Запустите через Telegram");
+            return;
         }
+    }
 
-        async function checkAuth() {
-            // Мгновенный вход, если уже авторизованы
-            if (localStorage.getItem('is_auth') === 'true') {
-                renderMenu(localStorage.getItem('is_admin') === 'true', localStorage.getItem('user_name'));
-            }
-
-            const user = tg.initDataUnsafe?.user;
-            if (!user) {
-                // Если данных нет, ждем чуть-чуть (бывает при слабом интернете)
-                setTimeout(() => {
-                    if (!tg.initDataUnsafe?.user && localStorage.getItem('is_auth') !== 'true') {
-                        document.getElementById('auth-screen').style.display = 'block';
-                        document.getElementById('user-hash-box').innerText = "Ошибка: Запустите в TG";
-                    } else if (tg.initDataUnsafe?.user) {
-                        processAuth(tg.initDataUnsafe.user);
-                    }
-                }, 500);
-            } else {
-                processAuth(user);
-            }
-        }
-
+    processAuth(user);
         async function processAuth(user) {
             try {
                 const uHash = await makeHash(user.id);
