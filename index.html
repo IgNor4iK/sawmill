@@ -2,52 +2,88 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sawmill OS v5.1</title>
-    <!-- План Б: Работаем через твой локальный файл -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sawmill OS v5.2</title>
     <script src="telega.js"></script>
     <style>
-        :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #007AFF; --green: #4CD964; --text: #ffffff; --text-dim: #888; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; }
+        :root { 
+            --bg: #0f0f0f; 
+            --card: #1a1a1a; 
+            --accent: #007AFF; 
+            --green: #4CD964; 
+            --text: #ffffff; 
+            --text-dim: #888;
+            /* Динамический отступ сверху для защиты от наезда на часы/камеру */
+            --safe-top: env(safe-area-inset-top, 20px);
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            min-height: 100vh;
+        }
         
-        /* Экран загрузки и ошибок */
-        #auth-screen { display: flex; flex-direction: column; align-items: center; padding: 100px 20px; text-align: center; width: 100%; }
-        #user-hash-box { font-family: monospace; font-size: 10px; color: #444; background: #000; padding: 10px; margin-top: 30px; word-break: break-all; border-radius: 8px; width: 80%; }
+        #auth-screen { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding-top: calc(var(--safe-top) + 80px); 
+            text-align: center; 
+            width: 100%; 
+        }
+
+        #main-menu { 
+            display: none; 
+            padding: var(--safe-top) 20px 20px 20px; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 100%; 
+            box-sizing: border-box; 
+        }
         
-        /* Главное меню */
-        #main-menu { display: none; padding: 20px; flex-direction: column; align-items: center; width: 100%; box-sizing: border-box; }
-        
-        .welcome { text-align: center; margin-bottom: 30px; margin-top: 10px; }
-        .welcome h1 { margin: 0; font-size: 26px; color: var(--accent); }
+        .welcome { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            margin-top: 20px; /* Дополнительный зазор под "челкой" */
+        }
+        .welcome h1 { margin: 0; font-size: 28px; color: var(--accent); font-weight: 800; }
         .welcome p { color: var(--text-dim); margin-top: 5px; font-size: 14px; }
 
         .menu-grid { width: 100%; max-width: 400px; display: grid; gap: 12px; }
         .menu-item { 
-            background: var(--card); padding: 20px; border-radius: 20px; 
+            background: var(--card); padding: 20px; border-radius: 22px; 
             display: flex; align-items: center; cursor: pointer; 
             border: 1px solid #222; text-decoration: none; color: white;
-            transition: transform 0.1s;
+            transition: transform 0.1s, background 0.2s;
         }
         .menu-item:active { transform: scale(0.97); background: #222; }
         
-        .menu-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-right: 15px; background: #222; }
-        .menu-info h3 { margin: 0; font-size: 17px; }
+        .menu-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-right: 15px; background: #222; }
+        .menu-info h3 { margin: 0; font-size: 18px; }
         .menu-info p { margin: 2px 0 0; font-size: 12px; color: var(--text-dim); }
 
-        #admin-link { display: none; border-color: var(--accent); background: rgba(0,122,255,0.05); }
+        #admin-link { display: none; border-color: rgba(0,122,255,0.3); background: rgba(0,122,255,0.05); }
+        #user-hash-box { font-family: monospace; font-size: 11px; color: #555; background: #000; padding: 15px; margin-top: 40px; word-break: break-all; border-radius: 12px; width: 85%; line-height: 1.4; border: 1px solid #111; }
+        b { color: var(--text); }
     </style>
 </head>
 <body>
 
     <div id="auth-screen">
-        <h2 id="status-title" style="color:var(--accent);">ЗАГРУЗКА...</h2>
-        <div id="user-hash-box">Проверка ключей доступа...</div>
+        <h2 id="status-title" style="color:var(--accent); letter-spacing: 1px;">ЗАГРУЗКА...</h2>
+        <div id="user-hash-box">Инициализация Mini App...</div>
     </div>
 
     <div id="main-menu">
         <div class="welcome">
-            <h1 id="user-name">Пилорама</h1>
-            <p>Панель инструментов</p>
+            <h1 id="user-name">ПИЛОРАМА</h1>
+            <p>Панель управления системой</p>
         </div>
         
         <div class="menu-grid">
@@ -57,15 +93,15 @@
             </a>
             <a href="journal.html" class="menu-item">
                 <div class="menu-icon" style="color: var(--green);">📋</div>
-                <div class="menu-info"><h3>Журнал</h3><p>Учет кубатуры</p></div>
+                <div class="menu-info"><h3>Журнал</h3><p>Учет кубатуры (ГОСТ)</p></div>
             </a>
             <a href="gost.html" class="menu-item">
                 <div class="menu-icon" style="color: #FF9500;">📑</div>
-                <div class="menu-info"><h3>ГОСТ 2708-75</h3><p>Справочник</p></div>
+                <div class="menu-info"><h3>ГОСТ 2708-75</h3><p>Справочник объемов</p></div>
             </a>
             <a href="users.html" id="admin-link" class="menu-item">
                 <div class="menu-icon">👥</div>
-                <div class="menu-info"><h3>Пользователи</h3><p>Админ-панель</p></div>
+                <div class="menu-info"><h3>Доступ</h3><p>Управление командой</p></div>
             </a>
         </div>
     </div>
@@ -80,19 +116,21 @@
         }
 
         async function initApp() {
+            // Настройка системной кнопки Telegram и темы
             tg.ready();
             tg.expand();
+            tg.setHeaderColor(tg.themeParams.bg_color || '#0f0f0f');
 
             const user = tg.initDataUnsafe?.user;
             if (!user) {
-                showError("ОШИБКА", "Запустите в Telegram");
+                showError("ДОСТУП ЗАКРЫТ", "Пожалуйста, запустите приложение через бота Telegram.");
                 return;
             }
 
             try {
                 const uHash = await makeHash(user.id);
                 const resp = await fetch('config.json?v=' + Date.now());
-                if (!resp.ok) throw new Error("Нет файла конфига");
+                if (!resp.ok) throw new Error("config.json not found");
                 
                 const config = await resp.json();
                 const isAdmin = (uHash === config.admin_hash);
@@ -101,25 +139,37 @@
                 if (isAdmin || isUser) {
                     renderMenu(isAdmin, user.first_name);
                 } else {
-                    showError("ДОСТУП ЗАКРЫТ", user.id);
+                    showError("НЕТ ДОСТУПА", user.id);
                 }
             } catch (e) {
-                showError("СБОЙ СЕТИ", "Проверьте config.json");
+                showError("ОШИБКА КОНФИГА", "Проверьте файл config.json на GitHub.");
             }
         }
 
         function renderMenu(isAdmin, name) {
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('main-menu').style.display = 'flex';
-            if (name) document.getElementById('user-name').innerText = name;
+            if (name) document.getElementById('user-name').innerText = name.toUpperCase();
             if (isAdmin) document.getElementById('admin-link').style.display = 'flex';
             tg.HapticFeedback?.impactOccurred('medium');
         }
 
-        function showError(title, msg) {
+        function showError(title, userId) {
             document.getElementById('status-title').innerText = title;
             document.getElementById('status-title').style.color = "#ff3b30";
-            document.getElementById('user-hash-box').innerText = msg;
+            const box = document.getElementById('user-hash-box');
+            
+            if (isNaN(userId)) {
+                box.innerText = userId;
+            } else {
+                box.innerHTML = `Ваш ID: <b>${userId}</b><br><br>Скопируйте его и отправьте администратору для получения доступа.`;
+                box.style.cursor = "pointer";
+                box.onclick = () => {
+                    navigator.clipboard.writeText(userId);
+                    tg.HapticFeedback?.notificationOccurred('success');
+                    tg.showAlert("ID скопирован!");
+                };
+            }
         }
 
         window.onload = initApp;
