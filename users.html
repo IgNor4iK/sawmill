@@ -4,56 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Управление доступом</title>
+    <script src="telega.js"></script>
     <style>
         :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #007AFF; --green: #4CD964; --text: #ffffff; --text-dim: #888; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
         
-        .header { display: flex; align-items: center; margin-bottom: 25px; }
-        .back-btn { font-size: 30px; color: var(--accent); cursor: pointer; text-decoration: none; padding-right: 20px; }
+        .header { display: flex; align-items: center; margin-bottom: 20px; }
+        .back-btn { font-size: 34px; color: var(--accent); cursor: pointer; padding-right: 15px; line-height: 1; }
         
-        .card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #222; }
-        h3 { margin-top: 0; font-size: 16px; color: var(--accent); }
+        .card { background: var(--card); padding: 16px; border-radius: 18px; margin-bottom: 12px; border: 1px solid #222; }
+        h3 { margin: 0 0 10px 0; font-size: 15px; color: var(--accent); text-transform: uppercase; }
         
-        .user-item { background: #111; padding: 10px; border-radius: 10px; margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
-        .hash-str { font-family: monospace; font-size: 10px; color: #555; word-break: break-all; }
+        .user-item { background: #111; padding: 12px; border-radius: 12px; margin-top: 8px; border: 1px solid #222; }
+        .hash-str { font-family: 'Courier New', monospace; font-size: 11px; color: #555; word-break: break-all; margin-top: 5px; cursor: pointer; }
+        .hash-str:active { color: var(--green); }
         
-        input { width: 100%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid #333; border-radius: 10px; color: white; outline: none; }
-        .btn { width: 100%; padding: 12px; background: var(--accent); border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
+        input { width: 100%; padding: 14px; margin: 10px 0; background: #222; border: 1px solid #333; border-radius: 12px; color: white; font-size: 16px; box-sizing: border-box; outline: none; }
+        input:focus { border-color: var(--accent); }
+
+        .btn { width: 100%; padding: 14px; background: var(--accent); border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .btn:active { transform: scale(0.98); }
         
-        .copy-hint { font-size: 10px; color: var(--green); cursor: pointer; text-decoration: underline; }
+        .hint { font-size: 11px; color: var(--text-dim); margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div class="back-btn" onclick="window.history.back()">‹</div>
-        <h2>Пользователи</h2>
+        <h2 style="margin:0">Доступ</h2>
     </div>
 
-    <!-- ГЕНЕРАТОР -->
     <div class="card">
-        <h3>Добавить нового</h3>
-        <p style="font-size: 12px; color: var(--text-dim);">Введите Telegram ID нового сотрудника:</p>
-        <input type="number" id="new-id" placeholder="Напр. 123456789">
-        <button class="btn" onclick="generateHash()">Создать хэш</button>
+        <h3>Новый сотрудник</h3>
+        <p class="hint">Введи Telegram ID (цифры), чтобы получить хэш для конфига:</p>
+        <input type="number" id="new-id" placeholder="ID пользователя" inputmode="numeric">
+        <button class="btn" onclick="generateHash()">СФОРМИРОВАТЬ ХЭШ</button>
+        
         <div id="result-box" style="display:none; margin-top: 15px;">
-            <p style="font-size: 11px; margin-bottom: 5px;">Хэш для config.json:</p>
+            <p style="font-size: 11px; color: var(--green); margin-bottom: 5px;">Нажми на код, чтобы скопировать:</p>
             <div class="hash-str" id="new-hash" onclick="copyText(this)"></div>
-            <p class="copy-hint">Нажми на хэш, чтобы скопировать</p>
         </div>
     </div>
 
-    <!-- СПИСОК ИЗ CONFIG.JSON -->
     <div class="card">
-        <h3>Текущий доступ</h3>
-        <div id="users-list">Загрузка списка...</div>
+        <h3>Текущий конфиг</h3>
+        <div id="users-list" style="font-size: 13px; color: #666;">Загрузка списка из config.json...</div>
     </div>
 
     <script>
-        // Проверка прав (только админ)
-        if (sessionStorage.getItem('is_admin') !== 'true') {
-            window.location.href = 'index.html';
-        }
+        const tg = window.Telegram.WebApp;
 
         async function makeHash(id) {
             const buf = new TextEncoder().encode(id.toString());
@@ -62,44 +62,53 @@
         }
 
         async function generateHash() {
-            const id = document.getElementById('new-id').value;
-            if(!id) return;
-            const h = await makeHash(id);
-            document.getElementById('new-hash').innerText = h;
+            const idInput = document.getElementById('new-id');
+            if(!idInput.value) return;
+            
+            tg.HapticFeedback?.impactOccurred('medium');
+            const h = await makeHash(idInput.value);
+            
+            const hashEl = document.getElementById('new-hash');
+            hashEl.innerText = `"${h}"`; // С кавычками, чтобы сразу в JSON
             document.getElementById('result-box').style.display = 'block';
         }
 
         function copyText(el) {
-            navigator.clipboard.writeText(el.innerText);
-            alert("Скопировано!");
+            navigator.clipboard.writeText(el.innerText.replace(/"/g, ''));
+            tg.HapticFeedback?.notificationOccurred('success');
+            tg.showAlert("Хэш скопирован! Теперь добавь его в authorized_hashes в файле config.json на GitHub.");
         }
 
         async function loadUsers() {
             const list = document.getElementById('users-list');
             try {
                 const resp = await fetch('config.json?v=' + Date.now());
+                if (!resp.ok) throw new Error();
                 const config = await resp.json();
                 
-                let html = '<div class="user-item"><small>Администратор:</small><div class="hash-str">' + config.admin_hash + '</div></div>';
+                let html = '<div style="margin-bottom:10px;"><small>АДМИН:</small><div class="hash-str">' + config.admin_hash + '</div></div>';
                 
                 if (config.authorized_hashes && config.authorized_hashes.length > 0) {
-                    html += '<p style="font-size: 12px; margin-top: 15px;">Помощники:</p>';
+                    html += '<hr style="border:0; border-top:1px solid #222; margin:15px 0;"><small>ПОМОЩНИКИ:</small>';
                     config.authorized_hashes.forEach((h, i) => {
                         html += `<div class="user-item">
-                            <small>Юзер #${i+1}:</small>
+                            <small>Юзер #${i+1}</small>
                             <div class="hash-str" onclick="copyText(this)">${h}</div>
                         </div>`;
                     });
                 } else {
-                    html += '<p style="color:#444; font-size:12px;">Помощников пока нет.</p>';
+                    html += '<p style="font-size:11px;">Список помощников пуст.</p>';
                 }
                 list.innerHTML = html;
             } catch (e) {
-                list.innerText = "Ошибка загрузки config.json";
+                list.innerText = "Ошибка доступа к config.json";
             }
         }
 
-        loadUsers();
+        window.onload = () => {
+            tg.ready();
+            loadUsers();
+        };
     </script>
 </body>
 </html>
