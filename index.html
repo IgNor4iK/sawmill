@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sawmill Master</title>
+    <title>Sawmill Master Pro v2.8</title>
     <script src="https://telegram.org"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --accent: #007AFF; --accent-log: #4CD964; --text: #e0e0e0; --input-bg: #2c2c2c; --danger: #FF3B30; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 0; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        /* Стили экранов */
-        #auth-screen { display: none; padding: 50px 20px; text-align: center; }
+        /* Экраны */
+        #auth-screen { display: none; padding: 60px 20px; text-align: center; width: 100%; box-sizing: border-box; }
+        #my-hash { font-family: monospace; font-size: 10px; color: #555; word-break: break-all; margin-top: 30px; border: 1px dashed #333; padding: 15px; background: #1a1a1a; border-radius: 8px; }
         #app-content { display: none; width: 100%; max-width: 450px; flex-direction: column; }
 
-        .tabs { display: flex; background: #1e1e1e; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 10; }
-        .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: #666; font-weight: bold; cursor: pointer; }
+        /* Навигация */
+        .tabs { display: flex; background: #1e1e1e; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: #666; font-weight: bold; cursor: pointer; font-size: 13px; outline: none; }
         .tab-btn.active { color: white; border-bottom: 3px solid var(--accent); }
         .tab-btn.active.log-active { border-bottom-color: var(--accent-log); }
 
@@ -22,27 +24,27 @@
         .page { display: none; }
         .page.active { display: block; }
 
+        /* Элементы */
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         label { display: block; margin-bottom: 5px; font-size: 12px; color: #888; }
         input { width: 100%; padding: 12px; margin-bottom: 10px; background: var(--input-bg); border: 1px solid #333; border-radius: 8px; color: white; font-size: 18px; box-sizing: border-box; outline: none; }
         
         .row-group { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .del-btn { background: none; border: none; color: var(--danger); font-size: 24px; cursor: pointer; }
-        .add-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; }
-        .result-item { background: #252525; padding: 12px; margin-top: 8px; border-radius: 8px; font-size: 22px; display: flex; justify-content: space-between; font-weight: bold; border-left: 8px solid var(--accent); cursor: pointer; }
+        .del-btn { background: none; border: none; color: var(--danger); font-size: 24px; cursor: pointer; padding-bottom: 10px; }
+        .result-item { background: #252525; padding: 12px; margin-top: 8px; border-radius: 8px; font-size: 20px; display: flex; justify-content: space-between; font-weight: bold; border-left: 8px solid var(--accent); cursor: pointer; }
 
         .btn-save { width: 100%; padding: 18px; background: var(--accent-log); color: #000; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
         .log-item { background: #252525; padding: 12px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 6px solid var(--accent-log); }
-        .stats { text-align: center; font-size: 16px; font-weight: bold; color: var(--accent-log); margin-bottom: 15px; }
-        .clear-link { color: #444; font-size: 12px; cursor: pointer; text-decoration: underline; display: block; text-align: right; margin-top: 10px; }
+        .stats { text-align: center; font-size: 15px; font-weight: bold; color: var(--accent-log); margin-bottom: 15px; }
+        .clear-link { color: #444; font-size: 11px; cursor: pointer; text-decoration: underline; display: block; text-align: right; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div id="auth-screen">
         <h2 style="color:var(--danger)">ДОСТУП ЗАПРЕЩЕН</h2>
-        <p>Вставьте этот хэш в код приложения:</p>
-        <div id="my-hash" style="font-family:monospace; font-size:10px; background:#000; padding:10px; word-break:break-all; color:#aaa;"></div>
+        <p>Ваш аккаунт не авторизован.</p>
+        <div id="my-hash">Загрузка ключа...</div>
     </div>
 
     <div id="app-content">
@@ -52,6 +54,7 @@
         </div>
 
         <div class="container">
+            <!-- КАЛЬКУЛЯТОР -->
             <div id="calc" class="page active">
                 <div class="card">
                     <label>Высота (мм)</label>
@@ -63,30 +66,35 @@
                 </div>
                 <div class="card">
                     <div id="rows-container"></div>
-                    <button class="add-btn" onclick="addRow(25, 10)">+ ДОБАВИТЬ РАЗМЕР</button>
+                    <button style="background:#333;color:white;border:none;padding:12px;border-radius:8px;width:100%;font-weight:bold;" onclick="addRow(25, 10)">+ РАЗМЕР</button>
                 </div>
                 <div id="results"></div>
+                <span class="clear-link" onclick="clearCalc()">Сбросить калькулятор</span>
             </div>
 
+            <!-- ЖУРНАЛ -->
             <div id="journal" class="page">
                 <div class="card">
                     <div class="stats" id="total-stats">За смену: 0 шт. | 0.000 м³</div>
                     <div style="display:flex; gap:10px;">
-                        <div style="flex:2"><label>Диаметр (мм)</label><input type="number" id="log-d" placeholder="240"></div>
-                        <div style="flex:1"><label>Длина (м)</label><input type="number" id="log-l" value="6.0" step="0.1"></div>
+                        <div style="flex:2"><label>Диаметр (мм)</label><input type="number" id="log-d" placeholder="240" inputmode="numeric"></div>
+                        <div style="flex:1"><label>Длина (м)</label><input type="number" id="log-l" value="6.0" step="0.1" inputmode="decimal"></div>
                     </div>
-                    <button class="btn-save" onclick="addLog()">ЗАПИСАТЬ</button>
+                    <label>Заметка</label>
+                    <input type="text" id="log-note" placeholder="Сосна">
+                    <button class="btn-save" onclick="addLog()">ЗАПИСАТЬ БРЕВНО</button>
                 </div>
                 <div id="log-list"></div>
-                <span class="clear-link" onclick="clearLog()">Очистить смену</span>
+                <span class="clear-link" onclick="clearLog()">Очистить историю смены</span>
             </div>
         </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        // !!! ВСТАВЬ СВОЙ ХЭШ ТУТ !!!
-        const ALLOWED_HASH = "ТВОЙ_ХЭШ"; 
+        
+        // --- ТВОЙ АДМИН-ХЭШ ---
+        const ADMIN_HASH = "ВСТАВЬ_СЮДА_СВОЙ_ХЭШ"; 
 
         async function getHash(id) {
             const msgBuffer = new TextEncoder().encode(id.toString());
@@ -97,24 +105,42 @@
         async function checkAuth() {
             const userId = tg?.initDataUnsafe?.user?.id;
             if (!userId) {
-                document.body.innerHTML = "<h2 style='color:white;text-align:center;padding:50px;'>ОШИБКА: Открой в Telegram</h2>";
+                document.getElementById('my-hash').innerText = "Запустите через Telegram бота";
+                document.getElementById('auth-screen').style.display = 'block';
                 return;
             }
+
             const userHash = await getHash(userId);
-            if (userHash === ALLOWED_HASH) {
-                document.getElementById('app-content').style.display = 'flex';
-                tg.expand(); tg.ready();
+
+            if (userHash === ADMIN_HASH) {
+                startApp();
             } else {
-                document.getElementById('auth-screen').style.display = 'block';
-                document.getElementById('my-hash').innerText = userHash;
+                try {
+                    const resp = await fetch('config.json?v=' + Date.now());
+                    const config = await resp.json();
+                    if (config.authorized_hashes && config.authorized_hashes.includes(userHash)) {
+                        startApp();
+                    } else { showAuthError(userHash); }
+                } catch (e) { showAuthError(userHash); }
             }
+        }
+
+        function startApp() {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('app-content').style.display = 'flex';
+            tg.expand(); tg.ready();
+        }
+
+        function showAuthError(hash) {
+            document.getElementById('auth-screen').style.display = 'block';
+            document.getElementById('my-hash').innerHTML = "Ваш ключ доступа:<br><b>" + hash + "</b>";
         }
 
         // --- ЛОГИКА КАЛЬКУЛЯТОРА ---
         function saveAndCalc() {
             const data = { h: document.getElementById('h').value, k: document.getElementById('kerf').value, b: document.getElementById('base').value,
                 rows: Array.from(document.querySelectorAll('.row-group')).map(g => ({ t: g.querySelector('.t').value, c: g.querySelector('.c').value })) };
-            localStorage.setItem('sw_settings', JSON.stringify(data));
+            localStorage.setItem('sw_set', JSON.stringify(data));
             renderCalc();
         }
 
@@ -125,12 +151,12 @@
                 let t = parseFloat(row.querySelector('.t').value), c = parseInt(row.querySelector('.c').value);
                 for (let j = 0; j < c; j++) { if (cur + t + k <= h) { cur += (t + k); marks.push({ v: cur.toFixed(1), s: t }); } }
             });
-            document.getElementById('results').innerHTML = marks.slice().reverse().map(m => `<div class="result-item" onclick="toLog(${m.v})"><span>${m.s}мм</span><span>${m.v} мм</span></div>`).join('');
+            document.getElementById('results').innerHTML = marks.slice().reverse().map(m => `<div class="result-item" onclick="toLog(${m.v})"><span style="color:#888;font-size:12px">(${m.s}мм)</span><span>${m.v} мм</span></div>`).join('');
         }
 
         function addRow(t=25, c=10, save=true) {
             const div = document.createElement('div'); div.className = 'row-group';
-            div.innerHTML = `<div style="flex:1"><label>Толщина</label><input type="number" class="t" value="${t}" oninput="saveAndCalc()"></div>
+            div.innerHTML = `<div style="flex:1"><label>Толщ.</label><input type="number" class="t" value="${t}" oninput="saveAndCalc()"></div>
                 <div style="flex:1"><label>Кол-во</label><input type="number" class="c" value="${c}" oninput="saveAndCalc()"></div>
                 <button class="del-btn" onclick="this.parentElement.remove();saveAndCalc()">×</button>`;
             document.getElementById('rows-container').appendChild(div);
@@ -138,18 +164,18 @@
         }
 
         // --- ЛОГИКА ЖУРНАЛА ---
-        const GOST = { 14:[0.06,0.09,0.12,0.15], 16:[0.07,0.11,0.16,0.19], 18:[0.10,0.14,0.19,0.24], 20:[0.12,0.17,0.23,0.30], 22:[0.15,0.21,0.28,0.36], 24:[0.18,0.25,0.33,0.43], 26:[0.21,0.29,0.39,0.50], 28:[0.25,0.34,0.45,0.58], 30:[0.28,0.39,0.52,0.67] };
+        const GOST = { 14:[0.06,0.09,0.12,0.15], 16:[0.07,0.11,0.16,0.19], 18:[0.10,0.14,0.19,0.24], 20:[0.12,0.17,0.23,0.30], 22:[0.15,0.21,0.28,0.36], 24:[0.18,0.25,0.33,0.43], 26:[0.21,0.29,0.39,0.50], 28:[0.25,0.34,0.45,0.58], 30:[0.28,0.39,0.52,0.67], 32:[0.33,0.45,0.59,0.76] };
 
         function addLog() {
-            const d = parseInt(document.getElementById('log-d').value), l = parseFloat(document.getElementById('log-l').value);
+            const d = parseInt(document.getElementById('log-d').value), l = parseFloat(document.getElementById('log-l').value), n = document.getElementById('log-note').value;
             if(!d) return;
-            let vol = (Math.PI * Math.pow(d/2000, 2) * l).toFixed(3); // Базовая формула
+            let vol = (Math.PI * Math.pow(d/2000, 2) * l).toFixed(3);
             let ds = Object.keys(GOST).map(Number);
-            let closest = ds.reduce((p, c) => Math.abs(c - d/10) < Math.abs(p - d/10) ? c : p);
-            if(Math.abs(closest - d/10) < 2) vol = GOST[closest][l > 5.5 ? 3 : l > 4.5 ? 2 : l > 3.5 ? 1 : 0];
+            let cl = ds.reduce((p, c) => Math.abs(c - d/10) < Math.abs(p - d/10) ? c : p);
+            if(Math.abs(cl - d/10) < 2) vol = GOST[cl][l > 5.5 ? 3 : l > 4.5 ? 2 : l > 3.5 ? 1 : 0].toFixed(3);
             
             const logs = JSON.parse(localStorage.getItem('sw_logs') || "[]");
-            logs.unshift({ id: Date.now(), d, l, v: vol, t: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
+            logs.unshift({ id: Date.now(), d, l, v: vol, n: n || "—", t: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
             localStorage.setItem('sw_logs', JSON.stringify(logs));
             document.getElementById('log-d').value = ''; renderLog();
         }
@@ -159,20 +185,23 @@
             const total = logs.reduce((s, i) => s + parseFloat(i.v), 0).toFixed(3);
             document.getElementById('total-stats').innerText = `За смену: ${logs.length} шт. | ${total} м³`;
             document.getElementById('log-list').innerHTML = logs.map(i => `<div class="log-item">
-                <div><b>${i.d} мм</b> (${i.l}м) — <span style="color:var(--accent-log)">${i.v} м³</span><br><small style="color:#555">${i.t}</small></div>
-                <div class="del-log" style="color:var(--danger);cursor:pointer;font-size:24px" onclick="delLog(${i.id})">×</div></div>`).join('');
+                <div><b>${i.d} мм</b> (${i.l}м) — <span style="color:var(--accent-log)">${i.v} м³</span><br><small style="color:#555">${i.t} • ${i.n}</small></div>
+                <div style="color:var(--danger);font-size:24px;padding:10px;cursor:pointer;" onclick="delLog(${i.id})">×</div></div>`).join('');
         }
 
-        function delLog(id) { let l = JSON.parse(localStorage.getItem('sw_logs')).filter(x => x.id !== id); localStorage.setItem('sw_logs', JSON.stringify(l)); renderLog(); }
+        function delLog(id) { if(confirm("Удалить?")) { let l = JSON.parse(localStorage.getItem('sw_logs')).filter(x => x.id !== id); localStorage.setItem('sw_logs', JSON.stringify(l)); renderLog(); } }
         function clearLog() { if(confirm("Очистить?")) { localStorage.removeItem('sw_logs'); renderLog(); } }
-        function toLog(v) { document.getElementById('log-d').value = Math.round(v); showPage('journal', document.getElementById('t-journal')); }
+        function toLog(v) { document.getElementById('log-size') ? document.getElementById('log-size').value = Math.round(v) : document.getElementById('log-d').value = Math.round(v); showPage('journal', document.getElementById('t-journal')); }
         function showPage(p, b) { document.querySelectorAll('.page').forEach(x => x.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active', 'log-active')); document.getElementById(p).classList.add('active'); b.classList.add('active'); if(p==='journal') b.classList.add('log-active'); }
+        function clearCalc() { if(confirm("Сбросить?")) { localStorage.removeItem('sw_set'); location.reload(); } }
 
         window.onload = () => {
             checkAuth();
-            const sv = JSON.parse(localStorage.getItem('sw_settings'));
-            if(sv) { document.getElementById('h').value = sv.h; document.getElementById('kerf').value = sv.k; document.getElementById('base').value = sv.b; sv.rows.forEach(r => addRow(r.t, r.c, false)); } 
-            else { addRow(25, 10, false); }
+            const sv = JSON.parse(localStorage.getItem('sw_set'));
+            if(sv) { 
+                document.getElementById('h').value = sv.h; document.getElementById('kerf').value = sv.k; document.getElementById('base').value = sv.b; 
+                if(sv.rows) sv.rows.forEach(r => addRow(r.t, r.c, false)); 
+            } else { addRow(25, 10, false); }
             renderCalc(); renderLog();
         };
     </script>
