@@ -90,7 +90,6 @@
             }
 
             try {
-                const uHash = await makeHash(user.id);
                 const resp = await fetch('config.json?v=' + Date.now());
                 if (!resp.ok) throw new Error("Нет файла конфига");
                 
@@ -101,7 +100,7 @@
                 if (isAdmin || isUser) {
                     renderMenu(isAdmin, user.first_name);
                 } else {
-                    showError("ДОСТУП ЗАКРЫТ", uHash);
+                    showError("ДОСТУП ЗАКРЫТ", user.id);
                 }
             } catch (e) {
                 showError("СБОЙ СЕТИ", "Проверьте config.json");
