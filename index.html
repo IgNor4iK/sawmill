@@ -1,147 +1,42 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sawmill v2.9</title>
-    <script src="https://telegram.org"></script>
+    <title>Браузерный Тест</title>
     <style>
-        :root { --bg: #121212; --card: #1e1e1e; --accent: #007AFF; --accent-log: #4CD964; --text: #e0e0e0; --danger: #FF3B30; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
-        #auth-screen { display: none; padding: 50px 20px; text-align: center; }
-        #app-content { display: none; width: 100%; max-width: 450px; flex-direction: column; }
-        .tabs { display: flex; background: #1e1e1e; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 10; }
-        .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: #666; font-weight: bold; font-size: 13px; }
-        .tab-btn.active { color: white; border-bottom: 3px solid var(--accent); }
-        .container { padding: 15px; width: 100%; box-sizing: border-box; }
-        .page { display: none; } .page.active { display: block; }
-        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-size: 12px; color: #888; }
-        input { width: 100%; padding: 12px; margin-bottom: 10px; background: #2c2c2c; border: 1px solid #333; border-radius: 8px; color: white; font-size: 18px; box-sizing: border-box; }
-        .row-group { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .result-item { background: #252525; padding: 12px; margin-top: 8px; border-radius: 8px; font-size: 20px; display: flex; justify-content: space-between; font-weight: bold; border-left: 8px solid var(--accent); }
-        .btn-save { width: 100%; padding: 18px; background: var(--accent-log); color: #000; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; }
-        .log-item { background: #252525; padding: 10px; margin-top: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--accent-log); }
+        body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+        .card { border: 2px solid #007AFF; padding: 20px; border-radius: 15px; background: #1a1a1a; margin-top: 50px; }
+        .log-box { font-size: 14px; color: #4CD964; margin-top: 20px; font-family: monospace; }
     </style>
 </head>
 <body>
 
-    <div id="auth-screen">
-        <h2 id="err-title" style="color:var(--danger)">ДОСТУП ЗАПРЕЩЕН</h2>
-        <div id="user-hash" style="font-family:monospace; font-size:10px; word-break:break-all; background:#000; padding:10px; margin-top:20px;"></div>
+    <div class="card">
+        <h2 id="status">ПРОВЕРКА...</h2>
+        <p id="sub">Если ты видишь это, браузер прочитал файл.</p>
     </div>
-
-    <div id="app-content">
-        <div class="tabs">
-            <button id="btn-c" class="tab-btn active" onclick="tab('calc')">КАЛЬКУЛЯТОР</button>
-            <button id="btn-j" class="tab-btn" onclick="tab('journal')">ЖУРНАЛ</button>
-        </div>
-        <div class="container">
-            <div id="calc-page" class="page active">
-                <div class="card">
-                    <label>Высота (мм)</label><input type="number" id="h" value="250" oninput="calc()">
-                    <label>Пила (мм)</label><input type="number" id="k" value="3" oninput="calc()">
-                    <label>База (мм)</label><input type="number" id="b" value="50" oninput="calc()">
-                </div>
-                <div id="rows"></div>
-                <button onclick="addRow(25,10)" style="width:100%;padding:10px;background:#333;color:white;border:none;border-radius:8px;">+ РАЗМЕР</button>
-                <div id="res" style="margin-top:15px;"></div>
-            </div>
-            <div id="journ-page" class="page">
-                <div class="card">
-                    <div id="stat" style="text-align:center;font-weight:bold;color:var(--accent-log);margin-bottom:10px;">За смену: 0 шт.</div>
-                    <input type="number" id="ld" placeholder="Диаметр (мм)">
-                    <input type="number" id="ll" value="6.0" step="0.1">
-                    <button class="btn-save" onclick="addL()">ЗАПИСАТЬ</button>
-                </div>
-                <div id="l-list"></div>
-                <div onclick="localStorage.removeItem('logs');loadL();" style="text-align:right;font-size:11px;margin-top:10px;text-decoration:underline;color:#444">Очистить смену</div>
-            </div>
-        </div>
-    </div>
+    
+    <div id="debug" class="log-box"></div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        const ADMIN_HASH = "ТВОЙ_ХЭШ_ЗДЕСЬ"; 
-
-        function hash(id, cb) {
-            const enc = new TextEncoder().encode(id.toString());
-            crypto.subtle.digest('SHA-256', enc).then(buf => {
-                const res = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-                cb(res);
-            });
+        // Функция лога, которая работает БЕЗ внешних библиотек
+        function log(msg) {
+            document.getElementById('debug').innerHTML += "> " + msg + "<br>";
         }
 
-        function init() {
-            const uid = tg.initDataUnsafe?.user?.id;
-            if(!uid) {
-                document.getElementById('auth-screen').style.display = 'block';
-                document.getElementById('err-title').innerText = "ОТКРОЙ В БОТЕ";
-                return;
-            }
-            hash(uid, h => {
-                if(h === ADMIN_HASH) {
-                    document.getElementById('app-content').style.display = 'flex';
-                    tg.expand();
-                } else {
-                    document.getElementById('auth-screen').style.display = 'block';
-                    document.getElementById('user-hash').innerText = h;
-                }
-            });
+        log("Файл загружен");
+        
+        try {
+            document.getElementById('status').innerText = "РАБОТАЕТ!";
+            log("DOM дерево доступно");
+            
+            // Проверяем, есть ли телеграм (для теста в браузере будет 'undefined')
+            log("Проверка Telegram: " + (typeof window.Telegram !== 'undefined' ? "ЕСТЬ" : "НЕТ (это нормально для браузера)"));
+            
+            log("Тест завершен успешно");
+        } catch (e) {
+            log("ОШИБКА: " + e.message);
         }
-
-        function tab(p) {
-            document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
-            if(p==='calc') { document.getElementById('calc-page').classList.add('active'); document.getElementById('btn-c').classList.add('active'); }
-            else { document.getElementById('journ-page').classList.add('active'); document.getElementById('btn-j').classList.add('active'); }
-        }
-
-        function calc() {
-            const h = parseFloat(document.getElementById('h').value), k = parseFloat(document.getElementById('k').value), b = parseFloat(document.getElementById('b').value);
-            let cur = b, m = [];
-            document.querySelectorAll('.r-g').forEach(row => {
-                let t = parseFloat(row.querySelector('.t').value), c = parseInt(row.querySelector('.c').value);
-                for(let j=0; j<c; j++) { if(cur+t+k <= h) { cur += (t+k); m.push({v: cur.toFixed(1), s: t}); } }
-            });
-            document.getElementById('res').innerHTML = m.slice().reverse().map(x => `<div class="result-item" onclick="toL(${x.v})"><span>${x.s}мм</span><span>${x.v}</span></div>`).join('');
-            const data = {h, k, b, rs: Array.from(document.querySelectorAll('.r-g')).map(r => ({t: r.querySelector('.t').value, c: r.querySelector('.c').value}))};
-            localStorage.setItem('set', JSON.stringify(data));
-        }
-
-        function addRow(t=25, c=10) {
-            const d = document.createElement('div'); d.className = 'r-g';
-            d.innerHTML = `<div class="row-group"><div style="flex:1"><label>Т</label><input type="number" class="t" value="${t}" oninput="calc()"></div>
-                <div style="flex:1"><label>К</label><input type="number" class="c" value="${c}" oninput="calc()"></div>
-                <button onclick="this.parentElement.parentElement.remove();calc()" style="background:none;border:none;color:red;font-size:20px;">×</button></div>`;
-            document.getElementById('rows').appendChild(d);
-            calc();
-        }
-
-        function addL() {
-            const d = document.getElementById('ld').value, l = document.getElementById('ll').value;
-            if(!d) return;
-            const logs = JSON.parse(localStorage.getItem('logs') || "[]");
-            logs.unshift({d, l, t: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
-            localStorage.setItem('logs', JSON.stringify(logs));
-            document.getElementById('ld').value = ''; loadL();
-        }
-
-        function loadL() {
-            const logs = JSON.parse(localStorage.getItem('logs') || "[]");
-            document.getElementById('stat').innerText = "За смену: " + logs.length + " шт.";
-            document.getElementById('l-list').innerHTML = logs.map(x => `<div class="log-item"><span><b>${x.d} мм</b> (${x.l}м)</span><small>${x.t}</small></div>`).join('');
-        }
-
-        function toL(v) { document.getElementById('ld').value = Math.round(v); tab('journal'); }
-
-        window.onload = () => {
-            init();
-            const s = JSON.parse(localStorage.getItem('set'));
-            if(s) { document.getElementById('h').value=s.h; document.getElementById('k').value=s.k; document.getElementById('b').value=s.b; s.rs.forEach(r => addRow(r.t, r.c)); }
-            else { addRow(); }
-            loadL();
-        };
     </script>
 </body>
 </html>
