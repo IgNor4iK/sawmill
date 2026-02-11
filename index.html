@@ -70,64 +70,72 @@
     <script>
         const tg = window.Telegram.WebApp;
 
-        // Хэширование ID
+        function showError(title, hash) {
+            document.getElementById('status-title').innerText = title;
+            document.getElementById('status-title').style.color = '#ff3b30';
+            document.getElementById('user-hash-box').innerText = hash;
+        }
+        
+        function showMenu(isAdmin, name) {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-menu').style.display = 'flex';
+            if (name) document.getElementById('user-name').innerText = name;
+            if (isAdmin) document.getElementById('admin-link').style.display = 'flex';
+            tg.HapticFeedback?.notificationOccurred('success');
+        }
+        
         async function makeHash(id) {
             const buf = new TextEncoder().encode(id.toString());
             const hashBuf = await crypto.subtle.digest('SHA-256', buf);
             return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
-
-        async function initApp() {
-            tg.ready();
-            tg.expand();
-
-            const user = tg.initDataUnsafe?.user;
-            
-            if (!user) {
-                showError("ДОСТУП ЗАКРЫТ", "Запустите приложение внутри Telegram");
-                return;
-            }
-
+        
+        async function startLogic() {
             try {
-                const uHash = await makeHash(user.id);
-                // Загружаем конфиг (nocache чтобы гитхаб не тупил)
-                const resp = await fetch('config.json?v=' + Date.now());
-                if (!resp.ok) throw new Error("Ошибка загрузки config.json");
+                tg.ready();
+                tg.expand();
+        
+                const user = tg.initDataUnsafe?.user;
                 
+                if (!user) {
+                    showError("ОШИБКА", "Запустите внутри Telegram (initData empty)");
+                    return;
+                }
+        
+                const uHash = await makeHash(user.id);
+                const resp = await fetch('config.json?v=' + Date.now());
+                
+                if (!resp.ok) {
+                    showError("ОШИБКА КОНФИГА", "Файл config.json не найден в корне");
+                    return;
+                }
+        
                 const config = await resp.json();
-
                 const isAdmin = (uHash === config.admin_hash);
                 const isAuthorized = config.authorized_hashes?.includes(uHash);
-
+        
                 if (isAdmin || isAuthorized) {
                     showMenu(isAdmin, user.first_name);
                 } else {
                     showError("ДОСТУП ЗАКРЫТ", uHash);
                 }
             } catch (err) {
-                showError("ОШИБКА СЕТИ", "Не удалось загрузить конфиг доступа");
-                console.error(err);
+                showError("CRITICAL ERROR", err.message);
             }
         }
-
-        function showMenu(isAdmin, name) {
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('main-menu').style.display = 'flex';
-            if (name) document.getElementById('user-name').innerText = name;
-            if (isAdmin) document.getElementById('admin-link').style.display = 'flex';
-            
-            // Легкая вибрация при успешном входе
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        
+        // Рекурсивная проверка готовности библиотеки
+        function bootstrap() {
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+                startLogic();
+            } else {
+                // Если еще не загрузилось, пробуем через 100мс
+                setTimeout(bootstrap, 100);
+            }
         }
-
-        function showError(title, hash) {
-            document.getElementById('status-title').innerText = title;
-            document.getElementById('status-title').style.color = '#ff3b30';
-            document.getElementById('user-hash-box').innerText = hash;
-        }
-
-        // Запуск при полной загрузке страницы
-        window.addEventListener('load', initApp);
+        
+        // Стартуем немедленно
+        bootstrap();
     </script>
 </body>
 </html>
