@@ -2,41 +2,69 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Браузерный Тест</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sawmill Auth</title>
+    <script src="https://telegram.org"></script>
     <style>
         body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-        .card { border: 2px solid #007AFF; padding: 20px; border-radius: 15px; background: #1a1a1a; margin-top: 50px; }
-        .log-box { font-size: 14px; color: #4CD964; margin-top: 20px; font-family: monospace; }
+        .card { border: 2px solid #333; padding: 25px; border-radius: 15px; background: #1a1a1a; margin-top: 50px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { margin: 0 0 10px; }
+        .green { color: #4CD964; }
+        .red { color: #FF3B30; }
+        .gray { color: #666; font-size: 13px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2 id="status">ПРОВЕРКА...</h2>
-        <p id="sub">Если ты видишь это, браузер прочитал файл.</p>
+        <h2 id="status">ИНИЦИАЛИЗАЦИЯ...</h2>
+        <p id="info">Проверка доступа</p>
     </div>
-    
-    <div id="debug" class="log-box"></div>
+
+    <p id="debug" class="gray">Скрипт загружен...</p>
 
     <script>
-        // Функция лога, которая работает БЕЗ внешних библиотек
-        function log(msg) {
-            document.getElementById('debug').innerHTML += "> " + msg + "<br>";
+        // ВПИШИ СВОЙ ID СЮДА
+        const MY_ID = 123456789; 
+
+        function initApp() {
+            const status = document.getElementById('status');
+            const info = document.getElementById('info');
+            const debug = document.getElementById('debug');
+
+            debug.innerText = "Проверка Telegram API...";
+
+            // Безопасная проверка: есть ли объект Telegram
+            const tg = window.Telegram ? window.Telegram.WebApp : null;
+
+            if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
+                status.innerText = "ОТКРОЙ В БОТЕ";
+                status.className = "red";
+                info.innerText = "В обычном браузере данные Telegram недоступны.";
+                debug.innerText = "Telegram WebApp не найден.";
+                return;
+            }
+
+            const user = tg.initDataUnsafe.user;
+            debug.innerText = "Пользователь найден: " + user.id;
+
+            if (user.id === MY_ID) {
+                status.innerText = "ДОСТУП РАЗРЕШЕН";
+                status.className = "green";
+                info.innerText = "Привет, " + user.first_name + "! База готова.";
+                tg.expand();
+                tg.ready();
+            } else {
+                status.innerText = "ДОСТУП ЗАПРЕЩЕН";
+                status.className = "red";
+                info.innerHTML = "Ваш ID: <b>" + user.id + "</b><br>Впишите его в код.";
+            }
         }
 
-        log("Файл загружен");
-        
-        try {
-            document.getElementById('status').innerText = "РАБОТАЕТ!";
-            log("DOM дерево доступно");
-            
-            // Проверяем, есть ли телеграм (для теста в браузере будет 'undefined')
-            log("Проверка Telegram: " + (typeof window.Telegram !== 'undefined' ? "ЕСТЬ" : "НЕТ (это нормально для браузера)"));
-            
-            log("Тест завершен успешно");
-        } catch (e) {
-            log("ОШИБКА: " + e.message);
-        }
+        // Запускаем через небольшую паузу для надежности
+        window.onload = () => {
+            setTimeout(initApp, 300);
+        };
     </script>
 </body>
 </html>
