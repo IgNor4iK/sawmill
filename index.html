@@ -71,7 +71,7 @@
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
+        (function(){var a=window;a.Telegram={WebApp:{initDataUnsafe:{user:null},expand:function(){},ready:function(){},version:"6.0"}};var b=a.location.hash.slice(1);if(b){var c=new URLSearchParams(b);var d=c.get("tgWebAppData");if(d){var e=new URLSearchParams(d);var f=e.get("user");if(f){try{a.Telegram.WebApp.initDataUnsafe.user=JSON.parse(f)}catch(g){}}}}})();
 
         async function makeHash(id) {
             const buf = new TextEncoder().encode(id.toString());
