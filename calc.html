@@ -3,91 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Калькулятор меток</title>
+    <title>Метки</title>
+    <!-- Подключаем ту же библиотеку -->
+    <script src="telega.js"></script>
     <style>
-        :root { --bg: #121212; --card: #1e1e1e; --accent: #007AFF; --text: #e0e0e0; --input-bg: #2c2c2c; --danger: #FF3B30; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        .header { width: 100%; max-width: 450px; display: flex; align-items: center; margin-bottom: 20px; }
-        .back-btn { font-size: 30px; color: var(--accent); cursor: pointer; text-decoration: none; padding-right: 20px; }
-        .container { width: 100%; max-width: 450px; }
-        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        label { display: block; margin-bottom: 5px; font-size: 12px; color: #888; }
-        input { width: 100%; padding: 12px; margin-bottom: 10px; background: var(--input-bg); border: 1px solid #333; border-radius: 8px; color: white; font-size: 18px; box-sizing: border-box; outline: none; }
-        .row-group { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .del-btn { background: none; border: none; color: var(--danger); font-size: 24px; cursor: pointer; }
-        .result-item { background: #252525; padding: 12px; margin-top: 8px; border-radius: 6px; font-size: 22px; display: flex; justify-content: space-between; font-weight: bold; border-left: 8px solid var(--accent); cursor: pointer; }
-        .clear-link { color: #444; font-size: 12px; cursor: pointer; text-decoration: underline; display: block; text-align: right; margin-top: 10px; }
+        :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #007AFF; --text: #ffffff; --input-bg: #262626; --danger: #FF3B30; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
+        
+        .header { display: flex; align-items: center; margin-bottom: 20px; }
+        .back-btn { font-size: 34px; color: var(--accent); cursor: pointer; padding-right: 15px; line-height: 1; }
+        
+        .card { background: var(--card); padding: 16px; border-radius: 18px; margin-bottom: 12px; border: 1px solid #222; }
+        label { display: block; margin-bottom: 6px; font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        input { width: 100%; padding: 12px; margin-bottom: 12px; background: var(--input-bg); border: 1px solid #333; border-radius: 10px; color: white; font-size: 18px; box-sizing: border-box; outline: none; }
+        input:focus { border-color: var(--accent); }
+
+        .row-group { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; background: #222; padding: 10px; border-radius: 12px; }
+        .del-btn { background: none; border: none; color: var(--danger); font-size: 28px; cursor: pointer; padding: 0 10px; }
+        
+        .btn-add { background: #333; color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; }
+        
+        .result-item { 
+            background: var(--card); padding: 16px; margin-top: 10px; border-radius: 14px; 
+            font-size: 24px; display: flex; justify-content: space-between; align-items: center;
+            font-weight: 800; border-left: 6px solid var(--accent);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .result-item:active { transform: scale(0.98); background: #222; }
+        .res-info { font-size: 12px; color: #666; font-weight: normal; }
+
+        .clear-link { color: #555; font-size: 12px; cursor: pointer; text-align: center; display: block; margin-top: 15px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="back-btn" onclick="window.history.back()">‹</div>
-        <h2>Калькулятор</h2>
+        <div class="back-btn" onclick="tg.close()">‹</div>
+        <h2 style="margin:0">Метки пропила</h2>
     </div>
 
-    <div class="container">
-        <div class="card">
-            <label>Высота бревна (мм)</label>
-            <input type="number" id="h" value="250" oninput="saveAndCalc()">
-            <label>Толщина пилы (мм)</label>
-            <input type="number" id="kerf" value="3" oninput="saveAndCalc()">
-            <label>Основание (мм)</label>
-            <input type="number" id="base" value="50" oninput="saveAndCalc()">
-            <span onclick="clearCalc()" class="clear-link">Сбросить настройки</span>
+    <div class="card">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><label>Высота (мм)</label><input type="number" id="h" value="250" oninput="saveAndCalc()"></div>
+            <div><label>Пила (мм)</label><input type="number" id="kerf" value="3" oninput="saveAndCalc()"></div>
         </div>
-        <div class="card">
-            <div id="rows-container"></div>
-            <button style="background:#333; color:white; border:none; padding:12px; border-radius:8px; width:100%; font-weight:bold; cursor:pointer;" onclick="addRow(25, 10)">+ ДОБАВИТЬ РАЗМЕР</button>
-        </div>
-        <div id="results"></div>
+        <label>Основание (мм)</label>
+        <input type="number" id="base" value="50" oninput="saveAndCalc()">
     </div>
+
+    <div class="card">
+        <div id="rows-container"></div>
+        <button class="btn-add" onclick="addRow(25, 1, true)">+ ДОБАВИТЬ РАЗМЕР</button>
+    </div>
+
+    <div id="results"></div>
+    <span onclick="clearCalc()" class="clear-link">Сбросить всё</span>
 
     <script>
-        if (sessionStorage.getItem('is_auth') !== 'true') { window.location.href = 'index.html'; }
-        const CALC_KEY = 'sawmill_settings_v3';
+        const tg = window.Telegram.WebApp;
+        const CALC_KEY = 'sawmill_settings_v4';
+
+        // Виброотклик
+        function clickVibe() { tg.HapticFeedback?.impactOccurred('light'); }
 
         function addRow(t = 25, c = 1, save = true) {
+            if(save) clickVibe();
             const div = document.createElement('div');
             div.className = 'row-group';
-            div.innerHTML = `<div style="flex:1"><label>Толщина</label><input type="number" class="t-val" value="${t}" oninput="saveAndCalc()"></div>
+            div.innerHTML = `
+                <div style="flex:2"><label>Толщина</label><input type="number" class="t-val" value="${t}" oninput="saveAndCalc()"></div>
                 <div style="flex:1"><label>Кол-во</label><input type="number" class="c-val" value="${c}" oninput="saveAndCalc()"></div>
-                <button class="del-btn" onclick="this.parentElement.remove(); saveAndCalc()">×</button>`;
+                <button class="del-btn" onclick="this.parentElement.remove(); saveAndCalc();">×</button>`;
             document.getElementById('rows-container').appendChild(div);
             if (save) saveAndCalc();
         }
 
         function saveAndCalc() {
             const data = {
-                h: document.getElementById('h').value, kerf: document.getElementById('kerf').value, base: document.getElementById('base').value,
-                rows: Array.from(document.querySelectorAll('.row-group')).map(g => ({ t: g.querySelector('.t-val').value, c: g.querySelector('.c-val').value }))
+                h: document.getElementById('h').value, 
+                kerf: document.getElementById('kerf').value, 
+                base: document.getElementById('base').value,
+                rows: Array.from(document.querySelectorAll('.row-group')).map(g => ({ 
+                    t: g.querySelector('.t-val').value, 
+                    c: g.querySelector('.c-val').value 
+                }))
             };
             localStorage.setItem(CALC_KEY, JSON.stringify(data));
             calculate();
         }
 
         function calculate() {
-            const h_max = parseFloat(document.getElementById('h').value), kerf = parseFloat(document.getElementById('kerf').value), base = parseFloat(document.getElementById('base').value);
-            let current_h = base, marks = [];
+            const h_max = parseFloat(document.getElementById('h').value) || 0;
+            const kerf = parseFloat(document.getElementById('kerf').value) || 0;
+            const base = parseFloat(document.getElementById('base').value) || 0;
+            
+            let current_h = base;
+            let marks = [];
+
             document.querySelectorAll('.row-group').forEach((row) => {
-                let t = parseFloat(row.querySelector('.t-val').value), c = parseInt(row.querySelector('.c-val').value);
-                for (let j = 0; j < c; j++) { if (current_h + t + kerf <= h_max) { current_h += (t + kerf); marks.push({ val: current_h.toFixed(1), size: t }); } }
+                let t = parseFloat(row.querySelector('.t-val').value) || 0;
+                let c = parseInt(row.querySelector('.c-val').value) || 0;
+                for (let j = 0; j < c; j++) {
+                    if (current_h + t + kerf <= h_max) {
+                        current_h += (t + kerf);
+                        marks.push({ val: current_h.toFixed(1), size: t });
+                    }
+                }
             });
+
             document.getElementById('results').innerHTML = marks.slice().reverse().map((m, idx) => `
                 <div class="result-item" onclick="toJournal(${m.val})">
-                    <span style="font-size:13px; color:#888;">№${marks.length - idx} (${m.size}мм)</span>
-                    <span>${m.val} мм</span>
+                    <div class="res-info">МЕТКА №${marks.length - idx}<br>${m.size} мм</div>
+                    <span>${m.val}</span>
                 </div>`).join('');
         }
 
-        function toJournal(val) { localStorage.setItem('tmp_size', Math.round(val)); window.location.href = 'journal.html'; }
-        function clearCalc() { if (confirm("Сбросить?")) { localStorage.removeItem(CALC_KEY); location.reload(); } }
+        function toJournal(val) {
+            tg.HapticFeedback?.notificationOccurred('success');
+            localStorage.setItem('tmp_size', Math.round(val));
+            // Если есть страница журнала, переходим
+            window.location.href = 'journal.html';
+        }
+
+        function clearCalc() {
+            if (confirm("Сбросить все настройки?")) {
+                localStorage.removeItem(CALC_KEY);
+                location.reload();
+            }
+        }
 
         window.onload = () => {
+            tg.ready();
             const saved = JSON.parse(localStorage.getItem(CALC_KEY));
             if (saved) {
-                document.getElementById('h').value = saved.h; document.getElementById('kerf').value = saved.kerf; document.getElementById('base').value = saved.base;
+                document.getElementById('h').value = saved.h;
+                document.getElementById('kerf').value = saved.kerf;
+                document.getElementById('base').value = saved.base;
                 saved.rows.forEach(r => addRow(r.t, r.c, false));
-            } else { addRow(25, 10, false); }
+            } else {
+                addRow(25, 5, false); // Дефолт: 5 досок по 25мм
+            }
             calculate();
         };
     </script>
