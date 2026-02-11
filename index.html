@@ -86,7 +86,7 @@
         // Динамическая загрузка скрипта ТГ
         logger("Загрузка telegram-web-app.js...");
         const script = document.createElement('script');
-        script.src = "https://telegram.org";
+        script.src = "telega.js";
         script.onload = () => {
             logger("Скрипт загружен в DOM.");
             setTimeout(startApp, 200); // Небольшая пауза для прогрузки объекта
