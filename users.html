@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Пользователи</title>
+    <style>
+        :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #007AFF; --text: #ffffff; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
+        .header { display: flex; align-items: center; margin-bottom: 20px; }
+        .back { font-size: 30px; color: var(--accent); text-decoration: none; padding-right: 20px; }
+        .card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; }
+        .hash-box { font-family: monospace; font-size: 11px; color: #888; word-break: break-all; margin-top: 10px; background: #000; padding: 10px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back">‹</a>
+        <h2>Админ-панель</h2>
+    </div>
+
+    <p style="color:#666; font-size:13px;">Чтобы добавить пользователя, скопируйте его хэш и вставьте в файл config.json на GitHub.</p>
+
+    <div id="users-list">
+        <div class="card">
+            <b>Ваш статус:</b> <span style="color:var(--accent)">Администратор</span>
+        </div>
+    </div>
+
+    <script>
+        // Проверка: если не админ — выкидываем
+        if (sessionStorage.getItem('is_admin') !== 'true') { window.location.href = 'index.html'; }
+
+        // Тут можно будет в будущем выводить список тех, кто в конфиге
+        // А пока просто держим страницу для расширения
+    </script>
+</body>
+</html>
