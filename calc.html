@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Калькулятор</title>
+    <style>
+        body { background: #0f0f0f; color: #fff; font-family: sans-serif; padding: 15px; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        .header { width: 100%; max-width: 450px; display: flex; align-items: center; margin-bottom: 20px; }
+        .back { font-size: 30px; color: #007AFF; text-decoration: none; padding-right: 20px; }
+        .card { background: #1a1a1a; padding: 15px; border-radius: 15px; margin-bottom: 15px; width: 100%; max-width: 420px; box-sizing: border-box; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; background: #222; border: 1px solid #333; border-radius: 10px; color: white; font-size: 18px; box-sizing: border-box; }
+        .row-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        .res-item { background: #222; padding: 15px; border-radius: 12px; margin-top: 10px; display: flex; justify-content: space-between; border-left: 5px solid #007AFF; font-weight: bold; width: 100%; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back">‹</a>
+        <h2>Калькулятор</h2>
+    </div>
+    
+    <div class="card">
+        <input type="number" id="h" value="250" oninput="calc()" placeholder="Высота">
+        <input type="number" id="k" value="3" oninput="calc()" placeholder="Пила">
+        <input type="number" id="b" value="50" oninput="calc()" placeholder="База">
+    </div>
+
+    <div id="rows-box" style="width: 100%; max-width: 420px;"></div>
+    
+    <button onclick="addRow(25,10)" style="width:100%; max-width:420px; padding:15px; background:#333; color:white; border:none; border-radius:12px; font-weight:bold;">+ РАЗМЕР</button>
+
+    <div id="res-box" style="width: 100%; max-width: 420px; margin-top: 10px;"></div>
+
+    <script>
+        function calc() {
+            const h = parseFloat(document.getElementById('h').value), k = parseFloat(document.getElementById('k').value), b = parseFloat(document.getElementById('b').value);
+            let cur = b, m = [];
+            document.querySelectorAll('.r-i').forEach(r => {
+                let t = parseFloat(r.querySelector('.t').value), c = parseInt(r.querySelector('.c').value);
+                for(let j=0; j<c; j++) { if(cur+t+k <= h) { cur += (t+k); m.push({v: cur.toFixed(1), s: t}); } }
+            });
+            document.getElementById('res-box').innerHTML = m.slice().reverse().map(x => `<div class="res-item" onclick="toJ(${x.v})"><span>${x.s}мм</span><span>${x.v}</span></div>`).join('');
+            localStorage.setItem('sw_set', JSON.stringify({h, k, b, rs: Array.from(document.querySelectorAll('.r-i')).map(r => ({t: r.querySelector('.t').value, c: r.querySelector('.c').value}))}));
+        }
+
+        function addRow(t=25, c=10, s=true) {
+            const d = document.createElement('div'); d.className = 'r-i';
+            d.innerHTML = `<div class="row-group"><input type="number" class="t" value="${t}" oninput="calc()"><input type="number" class="c" value="${c}" oninput="calc()"><button onclick="this.parentElement.parentElement.remove();calc()" style="background:none;border:none;color:red;font-size:24px;">×</button></div>`;
+            document.getElementById('rows-box').appendChild(d);
+            if(s) calc();
+        }
+
+        function toJ(v) { localStorage.setItem('tmp_val', Math.round(v)); window.location.href = 'journal.html'; }
+
+        window.onload = () => {
+            const sv = JSON.parse(localStorage.getItem('sw_set'));
+            if(sv) { document.getElementById('h').value=sv.h; document.getElementById('k').value=sv.k; document.getElementById('b').value=sv.b; sv.rs.forEach(r => addRow(r.t, r.c, false)); }
+            else { addRow(); }
+            calc();
+        };
+    </script>
+</body>
+</html>
